@@ -219,6 +219,73 @@ namespace LuaItemTemplate
         YLA::Push(L, icon);
         return 1;
     }
+
+    /**
+     * Returns the [ItemTemplate]'s random property group ID.
+     *
+     * @return uint32 randomProperty
+     */
+    int GetRandomProperty(lua_State* L, ItemTemplate* itemTemplate)
+    {
+        YLA::Push(L, itemTemplate->RandomProperty);
+        return 1;
+    }
+
+    /**
+     * Returns the [ItemTemplate]'s random suffix group ID.
+     *
+     * @return uint32 randomSuffix
+     */
+    int GetRandomSuffix(lua_State* L, ItemTemplate* itemTemplate)
+    {
+        YLA::Push(L, itemTemplate->RandomSuffix);
+        return 1;
+    }
+
+    /**
+     * Returns the [ItemTemplate]'s gem properties ID.
+     *
+     * @return uint32 gemProperties
+     */
+    int GetGemProperties(lua_State* L, ItemTemplate* itemTemplate)
+    {
+        YLA::Push(L, itemTemplate->GemProperties);
+        return 1;
+    }
+
+    /**
+     * Returns the number of sockets on the [ItemTemplate].
+     *
+     * @return uint32 socketCount
+     */
+    int GetSocketCount(lua_State* L, ItemTemplate* itemTemplate)
+    {
+        uint32 count = 0;
+        for (uint32 i = 0; i < MAX_ITEM_PROTO_SOCKETS; ++i)
+        {
+            if (itemTemplate->Socket[i].Color)
+                ++count;
+        }
+
+        YLA::Push(L, count);
+        return 1;
+    }
+
+    /**
+     * Returns the socket color at the specified socket index of the [ItemTemplate].
+     *
+     * @param uint32 socketIndex : socket index (0-2)
+     * @return uint32 socketColor
+     */
+    int GetSocketColor(lua_State* L, ItemTemplate* itemTemplate)
+    {
+        uint32 socketIndex = YLA::CHECKVAL<uint32>(L, 2);
+        if (socketIndex >= MAX_ITEM_PROTO_SOCKETS)
+            return luaL_argerror(L, 2, "valid socket index expected");
+
+        YLA::Push(L, itemTemplate->Socket[socketIndex].Color);
+        return 1;
+    }
 }
 
 #endif
