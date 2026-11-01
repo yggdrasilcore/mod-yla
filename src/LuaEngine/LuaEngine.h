@@ -462,7 +462,7 @@ public:
 
     CreatureAI* GetAI(Creature* creature);
     InstanceData* GetInstanceData(Map* map);
-    void FreeInstanceId(uint32 instanceId);
+    void FreeInstanceId(uint32 instanceId, uint32 mapId = 0);
 
     /* Custom */
     bool OnTimedEvent(int funcRef, uint32 delay, uint32 calls, WorldObject* obj);
