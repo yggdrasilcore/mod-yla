@@ -2135,7 +2135,7 @@ void YLA::CreateInstanceData(Map const* map)
  * Unrefs the instanceId related events and data
  * Does all required actions for when an instance is freed.
  */
-void YLA::FreeInstanceId(uint32 instanceId)
+void YLA::FreeInstanceId(uint32 instanceId, uint32 mapId /* = 0 */)
 {
     // This state's lock (never global): every other binding access runs
     // under this same state lock, so Clear/unref cannot race Lua use.
@@ -2144,20 +2144,36 @@ void YLA::FreeInstanceId(uint32 instanceId)
     if (!YLAConfig::GetInstance().IsYLAEnabled())
         return;
 
+    // Use mapId if provided (for RegisterMapEvent bindings keyed by mapId),
+    // otherwise fall back to instanceId (for RegisterInstanceEvent bindings).
+    uint32 mapKey = mapId != 0 ? mapId : instanceId;
+
     for (int i = 1; i < Hooks::INSTANCE_EVENT_COUNT; ++i)
     {
-        auto key = EntryKey<Hooks::InstanceEvents>((Hooks::InstanceEvents)i, instanceId);
+        auto instanceKey = EntryKey<Hooks::InstanceEvents>((Hooks::InstanceEvents)i, instanceId);
+        auto mapKeyEntry = EntryKey<Hooks::InstanceEvents>((Hooks::InstanceEvents)i, mapKey);
 
-        if (MapEventBindings->HasBindingsFor(key))
-            MapEventBindings->Clear(key);
+        if (MapEventBindings->HasBindingsFor(mapKeyEntry))
+            MapEventBindings->Clear(mapKeyEntry);
 
-        if (InstanceEventBindings->HasBindingsFor(key))
-            InstanceEventBindings->Clear(key);
+        if (InstanceEventBindings->HasBindingsFor(instanceKey))
+            InstanceEventBindings->Clear(instanceKey);
 
         if (instanceDataRefs.find(instanceId) != instanceDataRefs.end())
         {
             luaL_unref(L, LUA_REGISTRYINDEX, instanceDataRefs[instanceId]);
             instanceDataRefs.erase(instanceId);
+        }
+
+        // Clean up continentDataRefs for non-instanceable maps keyed by mapId.
+        if (mapId != 0)
+        {
+            auto mapRef = continentDataRefs.find(mapId);
+            if (mapRef != continentDataRefs.end())
+            {
+                luaL_unref(L, LUA_REGISTRYINDEX, mapRef->second);
+                continentDataRefs.erase(mapRef);
+            }
         }
     }
 }

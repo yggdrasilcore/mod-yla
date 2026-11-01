@@ -362,9 +362,63 @@ void YLA::OnShutdown()
 // MAP
 void YLA::OnCreate(Map* map)
 {
-    START_HOOK_MAP(MAP_EVENT_ON_CREATE);
-    Push(map);
-    CallAllFunctions(ServerEventBindings, key);
+    if (!YLAConfig::GetInstance().IsYLAEnabled())
+        return;
+    LOCK_YLA_STATE;
+    if (!YLA::IsInitialized())
+        return;
+
+    // Server event: MAP_EVENT_ON_CREATE
+    auto srvKey = EventKey<ServerEvents>(MAP_EVENT_ON_CREATE);
+    if (ServerEventBindings && ServerEventBindings->HasBindingsFor(srvKey))
+    {
+        Push(map);
+        CallAllFunctions(ServerEventBindings, srvKey);
+    }
+
+    // Map event: INSTANCE_EVENT_ON_INITIALIZE + INSTANCE_EVENT_ON_LOAD (RegisterMapEvent bindings)
+    // Non-instanceable maps (e.g. battlegrounds) never get YLAInstanceAI, so fire both
+    // initialize and load here on map creation. Instanceable maps handle this via YLAInstanceAI.
+    if (!map->Instanceable())
+    {
+        auto initKey = EntryKey<InstanceEvents>(INSTANCE_EVENT_ON_INITIALIZE, map->GetId());
+        if (MapEventBindings && MapEventBindings->HasBindingsFor(initKey))
+        {
+            // Push instance_data table (from continentDataRefs for non-instanceable maps)
+            auto cit = continentDataRefs.find(map->GetId());
+            if (cit != continentDataRefs.end())
+            {
+                lua_rawgeti(L, LUA_REGISTRYINDEX, cit->second);
+                ++push_counter;
+            }
+            else
+            {
+                lua_newtable(L);
+                ++push_counter;
+            }
+            Push(map);
+            CallAllFunctions(MapEventBindings, initKey);
+        }
+
+        auto loadKey = EntryKey<InstanceEvents>(INSTANCE_EVENT_ON_LOAD, map->GetId());
+        if (MapEventBindings && MapEventBindings->HasBindingsFor(loadKey))
+        {
+            // Push instance_data table (from continentDataRefs for non-instanceable maps)
+            auto cit = continentDataRefs.find(map->GetId());
+            if (cit != continentDataRefs.end())
+            {
+                lua_rawgeti(L, LUA_REGISTRYINDEX, cit->second);
+                ++push_counter;
+            }
+            else
+            {
+                lua_newtable(L);
+                ++push_counter;
+            }
+            Push(map);
+            CallAllFunctions(MapEventBindings, loadKey);
+        }
+    }
 }
 
 // MAP
@@ -378,10 +432,45 @@ void YLA::OnDestroy(Map* map)
 // MAP
 void YLA::OnPlayerEnter(Map* map, Player* player)
 {
-    START_HOOK_MAP(MAP_EVENT_ON_PLAYER_ENTER);
-    Push(map);
-    Push(player);
-    CallAllFunctions(ServerEventBindings, key);
+    if (!YLAConfig::GetInstance().IsYLAEnabled())
+        return;
+    LOCK_YLA_STATE;
+    if (!YLA::IsInitialized())
+        return;
+
+    // Server event: MAP_EVENT_ON_PLAYER_ENTER
+    auto srvKey = EventKey<ServerEvents>(MAP_EVENT_ON_PLAYER_ENTER);
+    if (ServerEventBindings && ServerEventBindings->HasBindingsFor(srvKey))
+    {
+        Push(map);
+        Push(player);
+        CallAllFunctions(ServerEventBindings, srvKey);
+    }
+
+    // Map event: INSTANCE_EVENT_ON_PLAYER_ENTER (RegisterMapEvent bindings)
+    // Non-instanceable maps never get YLAInstanceAI, so dispatch here directly.
+    if (!map->Instanceable())
+    {
+        auto mapKey = EntryKey<InstanceEvents>(INSTANCE_EVENT_ON_PLAYER_ENTER, map->GetId());
+        if (MapEventBindings && MapEventBindings->HasBindingsFor(mapKey))
+        {
+            // Push instance_data table
+            auto cit = continentDataRefs.find(map->GetId());
+            if (cit != continentDataRefs.end())
+            {
+                lua_rawgeti(L, LUA_REGISTRYINDEX, cit->second);
+                ++push_counter;
+            }
+            else
+            {
+                lua_newtable(L);
+                ++push_counter;
+            }
+            Push(map);
+            Push(player);
+            CallAllFunctions(MapEventBindings, mapKey);
+        }
+    }
 }
 
 // MAP
@@ -401,10 +490,45 @@ void YLA::OnUpdate(Map* map, uint32 diff)
     if (this != GYLA && eventMgr)
         eventMgr->globalProcessor->Update(diff);
 
-    START_HOOK_MAP(MAP_EVENT_ON_UPDATE);
-    Push(map);
-    Push(diff);
-    CallAllFunctions(ServerEventBindings, key);
+    if (!YLAConfig::GetInstance().IsYLAEnabled())
+        return;
+    LOCK_YLA_STATE;
+    if (!YLA::IsInitialized())
+        return;
+
+    // Server event: MAP_EVENT_ON_UPDATE
+    auto srvKey = EventKey<ServerEvents>(MAP_EVENT_ON_UPDATE);
+    if (ServerEventBindings && ServerEventBindings->HasBindingsFor(srvKey))
+    {
+        Push(map);
+        Push(diff);
+        CallAllFunctions(ServerEventBindings, srvKey);
+    }
+
+    // Map event: INSTANCE_EVENT_ON_UPDATE (RegisterMapEvent bindings)
+    // Non-instanceable maps never get YLAInstanceAI, so dispatch here directly.
+    if (!map->Instanceable())
+    {
+        auto mapKey = EntryKey<InstanceEvents>(INSTANCE_EVENT_ON_UPDATE, map->GetId());
+        if (MapEventBindings && MapEventBindings->HasBindingsFor(mapKey))
+        {
+            // Push instance_data table
+            auto cit = continentDataRefs.find(map->GetId());
+            if (cit != continentDataRefs.end())
+            {
+                lua_rawgeti(L, LUA_REGISTRYINDEX, cit->second);
+                ++push_counter;
+            }
+            else
+            {
+                lua_newtable(L);
+                ++push_counter;
+            }
+            Push(map);
+            Push(diff);
+            CallAllFunctions(MapEventBindings, mapKey);
+        }
+    }
 }
 
 // MAP
