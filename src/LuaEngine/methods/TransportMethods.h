@@ -23,11 +23,14 @@ namespace LuaTransport
      */
     int GetPassengers(lua_State* L, Transport* transport)
     {
-        Transport::PassengerSet const passengers = transport->GetPassengers();
+        Transport::PassengerGuidSet const passengers = transport->GetPassengerGuids();
         lua_newtable(L);
         int i = 1;
-        for (WorldObject* passenger : passengers)
+        for (ObjectGuid const& guid : passengers)
         {
+            WorldObject* passenger = transport->GetPassenger(guid);
+            if (!passenger || !transport->HasPassenger(guid))
+                continue;
             YLA::Push(L, passenger);
             lua_rawseti(L, -2, i++);
         }
