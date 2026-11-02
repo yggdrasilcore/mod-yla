@@ -23,7 +23,7 @@ namespace LuaTransport
      */
     int GetPassengers(lua_State* L, Transport* transport)
     {
-        Transport::PassengerSet const& passengers = transport->GetPassengers();
+        Transport::PassengerSet const passengers = transport->GetPassengers();
         lua_newtable(L);
         int i = 1;
         for (WorldObject* passenger : passengers)
