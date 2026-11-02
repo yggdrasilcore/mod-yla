@@ -439,7 +439,7 @@ namespace LuaMap
             return 1;
         }
 
-        TransportsContainer const& transports = map->GetAllTransports();
+        TransportsContainer const transports = map->GetAllTransports();
         lua_newtable(L);
         int i = 1;
         for (Transport* transport : transports)
