@@ -55,6 +55,8 @@ namespace LuaTransport
     {
         WorldObject* passenger = YLA::CHECKOBJ<WorldObject>(L, 2);
         bool withAll = YLA::CHECKVAL<bool>(L, 3, false);
+        if (!passenger->IsInWorld() || !transport->IsInWorld() || passenger->GetMap() != transport->GetMap())
+            return 0;
         transport->AddPassenger(passenger, withAll);
         return 0;
     }
