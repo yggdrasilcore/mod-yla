@@ -124,6 +124,28 @@ void YLA::OnAddToWorld(GameObject* pGameObject)
     START_HOOK(GAMEOBJECT_EVENT_ON_ADD, pGameObject->GetEntry());
     Push(pGameObject);
     CallAllFunctions(GameObjectEventBindings, key);
+
+    // Dispatch MapEventBindings directly for non-instanceable maps (no YLAInstanceAI).
+    if (MapEventBindings)
+    {
+        auto mapKey = EntryKey<InstanceEvents>(INSTANCE_EVENT_ON_GAMEOBJECT_CREATE, pGameObject->GetMapId());
+        if (MapEventBindings->HasBindingsFor(mapKey))
+        {
+            auto cit = continentDataRefs.find(pGameObject->GetMapId());
+            if (cit != continentDataRefs.end())
+            {
+                lua_rawgeti(L, LUA_REGISTRYINDEX, cit->second);
+                ++push_counter;
+            }
+            else
+            {
+                lua_newtable(L);
+                ++push_counter;
+            }
+            Push(pGameObject);
+            CallAllFunctions(MapEventBindings, mapKey);
+        }
+    }
 }
 
 void YLA::OnRemoveFromWorld(GameObject* pGameObject)

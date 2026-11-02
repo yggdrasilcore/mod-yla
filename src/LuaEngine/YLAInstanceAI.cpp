@@ -9,7 +9,7 @@
 
 void YLAInstanceAI::Initialize()
 {
-    sYLA->OnInitialize(this);
+    YLA::GetMapStateOrGlobal(instance->GetId(), instance->GetInstanceId())->OnInitialize(this);
 }
 
 void YLAInstanceAI::Load(const char* data)
@@ -42,7 +42,7 @@ void YLAInstanceAI::Load(const char* data)
             }
         }
     }
-    sYLA->OnLoad(this);
+    YLA::GetMapStateOrGlobal(instance->GetId(), instance->GetInstanceId())->OnLoad(this);
 }
 
 const char* YLAInstanceAI::Save() const
