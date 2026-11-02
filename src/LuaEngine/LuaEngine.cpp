@@ -2144,8 +2144,7 @@ void YLA::FreeInstanceId(uint32 instanceId, uint32 mapId /* = 0 */)
     if (!YLAConfig::GetInstance().IsYLAEnabled())
         return;
 
-    // Use mapId if provided (for RegisterMapEvent bindings keyed by mapId),
-    // otherwise fall back to instanceId (for RegisterInstanceEvent bindings).
+    // Use mapId if provided (RegisterMapEvent bindings keyed by mapId), else fall back to instanceId.
     uint32 mapKey = mapId != 0 ? mapId : instanceId;
 
     for (int i = 1; i < Hooks::INSTANCE_EVENT_COUNT; ++i)
@@ -2165,7 +2164,6 @@ void YLA::FreeInstanceId(uint32 instanceId, uint32 mapId /* = 0 */)
             instanceDataRefs.erase(instanceId);
         }
 
-        // Clean up continentDataRefs for non-instanceable maps keyed by mapId.
         if (mapId != 0)
         {
             auto mapRef = continentDataRefs.find(mapId);

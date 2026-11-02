@@ -80,15 +80,12 @@ void YLA::OnAddToWorld(Creature* pCreature)
     Push(pCreature);
     CallAllFunctions(CreatureEventBindings, CreatureUniqueBindings, entry_key, unique_key);
 
-    // Map event: INSTANCE_EVENT_ON_CREATURE_CREATE (RegisterMapEvent bindings)
-    // For non-instance maps (e.g. battlegrounds) there is no YLAInstanceAI,
-    // so dispatch MapEventBindings here directly.
+    // Dispatch MapEventBindings directly for non-instanceable maps (no YLAInstanceAI).
     if (MapEventBindings)
     {
         auto mapKey = EntryKey<InstanceEvents>(INSTANCE_EVENT_ON_CREATURE_CREATE, pCreature->GetMapId());
         if (MapEventBindings->HasBindingsFor(mapKey))
         {
-            // Push instance_data table
             auto cit = continentDataRefs.find(pCreature->GetMapId());
             if (cit != continentDataRefs.end())
             {

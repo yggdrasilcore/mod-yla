@@ -376,15 +376,12 @@ void YLA::OnCreate(Map* map)
         CallAllFunctions(ServerEventBindings, srvKey);
     }
 
-    // Map event: INSTANCE_EVENT_ON_INITIALIZE + INSTANCE_EVENT_ON_LOAD (RegisterMapEvent bindings)
-    // Non-instanceable maps (e.g. battlegrounds) never get YLAInstanceAI, so fire both
-    // initialize and load here on map creation. Instanceable maps handle this via YLAInstanceAI.
+    // Dispatch MapEventBindings directly for non-instanceable maps (no YLAInstanceAI).
     if (!map->Instanceable())
     {
         auto initKey = EntryKey<InstanceEvents>(INSTANCE_EVENT_ON_INITIALIZE, map->GetId());
         if (MapEventBindings && MapEventBindings->HasBindingsFor(initKey))
         {
-            // Push instance_data table (from continentDataRefs for non-instanceable maps)
             auto cit = continentDataRefs.find(map->GetId());
             if (cit != continentDataRefs.end())
             {
@@ -403,7 +400,6 @@ void YLA::OnCreate(Map* map)
         auto loadKey = EntryKey<InstanceEvents>(INSTANCE_EVENT_ON_LOAD, map->GetId());
         if (MapEventBindings && MapEventBindings->HasBindingsFor(loadKey))
         {
-            // Push instance_data table (from continentDataRefs for non-instanceable maps)
             auto cit = continentDataRefs.find(map->GetId());
             if (cit != continentDataRefs.end())
             {
@@ -447,14 +443,12 @@ void YLA::OnPlayerEnter(Map* map, Player* player)
         CallAllFunctions(ServerEventBindings, srvKey);
     }
 
-    // Map event: INSTANCE_EVENT_ON_PLAYER_ENTER (RegisterMapEvent bindings)
-    // Non-instanceable maps never get YLAInstanceAI, so dispatch here directly.
+    // Dispatch MapEventBindings directly for non-instanceable maps (no YLAInstanceAI).
     if (!map->Instanceable())
     {
         auto mapKey = EntryKey<InstanceEvents>(INSTANCE_EVENT_ON_PLAYER_ENTER, map->GetId());
         if (MapEventBindings && MapEventBindings->HasBindingsFor(mapKey))
         {
-            // Push instance_data table
             auto cit = continentDataRefs.find(map->GetId());
             if (cit != continentDataRefs.end())
             {
@@ -505,14 +499,12 @@ void YLA::OnUpdate(Map* map, uint32 diff)
         CallAllFunctions(ServerEventBindings, srvKey);
     }
 
-    // Map event: INSTANCE_EVENT_ON_UPDATE (RegisterMapEvent bindings)
-    // Non-instanceable maps never get YLAInstanceAI, so dispatch here directly.
+    // Dispatch MapEventBindings directly for non-instanceable maps (no YLAInstanceAI).
     if (!map->Instanceable())
     {
         auto mapKey = EntryKey<InstanceEvents>(INSTANCE_EVENT_ON_UPDATE, map->GetId());
         if (MapEventBindings && MapEventBindings->HasBindingsFor(mapKey))
         {
-            // Push instance_data table
             auto cit = continentDataRefs.find(map->GetId());
             if (cit != continentDataRefs.end())
             {
