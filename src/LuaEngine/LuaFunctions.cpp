@@ -691,6 +691,9 @@ YLARegister<Player> PlayerMethods[] =
     { "HasItem", &LuaPlayer::HasItem },
     { "Teleport", &LuaPlayer::Teleport, METHOD_REG_ALL, CROSSMAP_ALLOW },
     { "AddItem", &LuaPlayer::AddItem },
+    { "CreateItem", &LuaPlayer::CreateItem },
+    { "PlaceItemInBags", &LuaPlayer::PlaceItemInBags },
+    { "PlaceItemInBank", &LuaPlayer::PlaceItemInBank },
     { "IsInArenaTeam", &LuaPlayer::IsInArenaTeam },
     { "CanRewardQuest", &LuaPlayer::CanRewardQuest },
     { "CanCompleteRepeatableQuest", &LuaPlayer::CanCompleteRepeatableQuest },
@@ -795,6 +798,7 @@ YLARegister<Player> PlayerMethods[] =
     { "RemoveLifetimeKills", &LuaPlayer::RemoveLifetimeKills },
     { "ResurrectPlayer", &LuaPlayer::ResurrectPlayer },
     { "EquipItem", &LuaPlayer::EquipItem },
+    { "EquipBag", &LuaPlayer::EquipBag },
     { "ResetSpellCooldown", &LuaPlayer::ResetSpellCooldown },
     { "ResetTypeCooldowns", &LuaPlayer::ResetTypeCooldowns },
     { "ResetAllCooldowns", &LuaPlayer::ResetAllCooldowns },
@@ -1084,6 +1088,10 @@ YLARegister<Item> ItemMethods[] =
     { "GetSlot", &LuaItem::GetSlot },
     { "GetBagSlot", &LuaItem::GetBagSlot },
     { "GetEnchantmentId", &LuaItem::GetEnchantmentId },
+    { "GetEnchantmentDuration", &LuaItem::GetEnchantmentDuration },
+    { "GetEnchantmentCharges", &LuaItem::GetEnchantmentCharges },
+    { "GetRandomPropertyId", &LuaItem::GetRandomPropertyId },
+    { "GetSuffixFactor", &LuaItem::GetSuffixFactor },
     { "GetSpellId", &LuaItem::GetSpellId },
     { "GetSpellTrigger", &LuaItem::GetSpellTrigger },
     { "GetItemLink", &LuaItem::GetItemLink },
@@ -1113,6 +1121,10 @@ YLARegister<Item> ItemMethods[] =
     { "SetCount", &LuaItem::SetCount },
     { "SetRandomProperty", &LuaItem::SetRandomProperty },
     { "SetRandomSuffix", &LuaItem::SetRandomSuffix },
+    { "SetRandomEnchant", &LuaItem::SetRandomEnchant },
+    { "SetGem", &LuaItem::SetGem },
+    { "SetEnchantmentDuration", &LuaItem::SetEnchantmentDuration },
+    { "SetEnchantmentCharges", &LuaItem::SetEnchantmentCharges },
 
     // Boolean
     { "IsSoulBound", &LuaItem::IsSoulBound },
@@ -1162,6 +1174,11 @@ YLARegister<ItemTemplate> ItemTemplateMethods[] =
     { "GetItemLevel", &LuaItemTemplate::GetItemLevel },
     { "GetRequiredLevel", &LuaItemTemplate::GetRequiredLevel },
     { "GetIcon", &LuaItemTemplate::GetIcon },
+    { "GetRandomProperty", &LuaItemTemplate::GetRandomProperty },
+    { "GetRandomSuffix", &LuaItemTemplate::GetRandomSuffix },
+    { "GetGemProperties", &LuaItemTemplate::GetGemProperties },
+    { "GetSocketCount", &LuaItemTemplate::GetSocketCount },
+    { "GetSocketColor", &LuaItemTemplate::GetSocketColor },
     { NULL, NULL }
 };
 

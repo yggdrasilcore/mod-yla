@@ -3542,6 +3542,7 @@ namespace LuaPlayer
      * @param [Item] item : item to equip
      * @param uint32 entry : entry of the item to equip
      * @param uint32 slot : equipment slot to equip the item to The slot can be [EquipmentSlots] or [InventorySlots]
+     * @param int32 randomPropertyId = 0 : random property/suffix ID to use when creating the item from an entry (0 rolls a random one)
      * @return [Item] equippedItem : item or nil if equipping failed
      */
     int EquipItem(lua_State* L, Player* player)
@@ -3549,6 +3550,7 @@ namespace LuaPlayer
         uint16 dest = 0;
         Item* item = YLA::CHECKOBJ<Item>(L, 2, false);
         uint32 slot = YLA::CHECKVAL<uint32>(L, 3);
+        int32 randomPropertyId = YLA::CHECKVAL<int32>(L, 4, 0);
 
         if (slot >= INVENTORY_SLOT_BAG_END)
             return 1;
@@ -3556,7 +3558,7 @@ namespace LuaPlayer
         if (!item)
         {
             uint32 entry = YLA::CHECKVAL<uint32>(L, 2);
-            item = Item::CreateItem(entry, 1, player);
+            item = Item::CreateItem(entry, 1, player, false, randomPropertyId);
             if (!item)
                 return 1;
 
@@ -3766,6 +3768,244 @@ namespace LuaPlayer
             player->SendNewItem(item, itemCount, true, false);
         YLA::Push(L, item);
 
+        return 1;
+    }
+
+    void PrepareItemForPlacement(Item* item)
+    {
+        if (!item)
+            return;
+
+        item->SetGuidValue(ITEM_FIELD_CONTAINED, ObjectGuid::Empty);
+        item->SetSlot(NULL_SLOT);
+    }
+
+    /**
+     * Creates an item instance owned by the [Player] without placing it anywhere.
+     *
+     * The returned [Item] can be configured (enchants, gems, random properties) and then
+     * placed with [Player:EquipItem], [Player:EquipBag], [Player:PlaceItemInBags] or [Player:PlaceItemInBank].
+     *
+     * @param uint32 entry : entry of the item to create
+     * @param uint32 count = 1 : amount of the item to create
+     * @param int32 randomPropertyId = 0 : random property/suffix ID to apply (0 rolls a random one)
+     * @return [Item] item : the created item or nil
+     */
+    int CreateItem(lua_State* L, Player* player)
+    {
+        uint32 entry = YLA::CHECKVAL<uint32>(L, 2);
+        uint32 count = YLA::CHECKVAL<uint32>(L, 3, 1);
+        int32 randomPropertyId = YLA::CHECKVAL<int32>(L, 4, 0);
+
+        Item* item = Item::CreateItem(entry, count, player, false, randomPropertyId);
+        PrepareItemForPlacement(item);
+
+        if (item)
+            item->RemoveFromUpdateQueueOf(player);
+
+        YLA::Push(L, item);
+        return 1;
+    }
+
+    /**
+     * Equips a bag to one of the [Player]'s bag slots.
+     *
+     * @proto equippedBag = (item, bagSlot)
+     * @proto equippedBag = (entry, bagSlot)
+     * @param [Item] item : bag to equip
+     * @param uint32 entry : entry of the bag to equip
+     * @param uint32 bagSlot : bag slot (0-3) or absolute inventory slot (19-22)
+     * @return [Item] equippedBag : the equipped bag or nil if equipping failed
+     */
+    int EquipBag(lua_State* L, Player* player)
+    {
+        uint16 dest = 0;
+        uint32 slot = YLA::CHECKVAL<uint32>(L, 3);
+
+        if (slot < INVENTORY_SLOT_BAG_START)
+            slot += INVENTORY_SLOT_BAG_START;
+
+        if (slot >= INVENTORY_SLOT_BAG_END)
+            return 1;
+
+        Item* item = YLA::CHECKOBJ<Item>(L, 2, false);
+        bool created = false;
+        uint32 entry = 0;
+
+        if (!item)
+        {
+            entry = YLA::CHECKVAL<uint32>(L, 2);
+            item = Item::CreateItem(entry, 1, player);
+            created = true;
+            if (!item)
+                return 1;
+            PrepareItemForPlacement(item);
+        }
+
+        InventoryResult result = player->CanEquipItem(slot, dest, item, false);
+        if (result != EQUIP_ERR_OK)
+        {
+            if (created)
+                item->SetState(ITEM_REMOVED, player);
+            return 1;
+        }
+
+        if (!created && item->GetOwnerGUID() == player->GetGUID()
+            && player->GetItemByPos(item->GetBagSlot(), item->GetSlot()) == item)
+            player->RemoveItem(item->GetBagSlot(), item->GetSlot(), true);
+
+        if (created)
+        {
+            player->ItemAddedQuestCheck(entry, 1);
+            player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_RECEIVE_EPIC_ITEM, entry, 1);
+        }
+
+        YLA::Push(L, player->EquipItem(dest, item, true));
+        player->AutoUnequipOffhandIfNeed();
+        return 1;
+    }
+
+    /**
+     * Places an item in the [Player]'s bags (backpack or equipped bags).
+     *
+     * @proto placedItem = (item[, bag, slot])
+     * @proto placedItem = (entry, count, bag, slot, randomPropertyId)
+     * @param [Item] item : item to place
+     * @param uint32 entry : entry of the item to create and place
+     * @param uint32 count = 1 : amount of the item to create (entry only)
+     * @param uint32 bag = 0 (NULL_BAG) : explicit bag (255 for backpack); omit for automatic placement
+     * @param uint32 slot = 255 (NULL_SLOT) : explicit slot; omit for automatic placement
+     * @param int32 randomPropertyId = 0 : random property/suffix ID (entry only, 0 rolls a random one)
+     * @return [Item] placedItem : the stored item or nil
+     */
+    int PlaceItemInBags(lua_State* L, Player* player)
+    {
+        Item* item = YLA::CHECKOBJ<Item>(L, 2, false);
+        uint32 count = 1;
+        uint32 bag = NULL_BAG;
+        uint32 slot = NULL_SLOT;
+        bool created = false;
+
+        if (item)
+        {
+            count = item->GetCount();
+            bag = YLA::CHECKVAL<uint32>(L, 3, uint32(NULL_BAG));
+            slot = YLA::CHECKVAL<uint32>(L, 4, uint32(NULL_SLOT));
+        }
+        else
+        {
+            uint32 entry = YLA::CHECKVAL<uint32>(L, 2);
+            count = YLA::CHECKVAL<uint32>(L, 3, 1);
+            bag = YLA::CHECKVAL<uint32>(L, 4, uint32(NULL_BAG));
+            slot = YLA::CHECKVAL<uint32>(L, 5, uint32(NULL_SLOT));
+            int32 randomPropertyId = YLA::CHECKVAL<int32>(L, 6, 0);
+
+            item = Item::CreateItem(entry, count, player, false, randomPropertyId);
+            created = true;
+            if (!item)
+                return 1;
+            PrepareItemForPlacement(item);
+        }
+
+        if (!created && item->GetOwnerGUID() == player->GetGUID()
+            && player->GetItemByPos(item->GetBagSlot(), item->GetSlot()) == item)
+            player->RemoveItem(item->GetBagSlot(), item->GetSlot(), true);
+
+        ItemPosCountVec dest;
+        InventoryResult msg = player->CanStoreItem(uint8(bag), uint8(slot), dest, item, false);
+        if (msg != EQUIP_ERR_OK)
+        {
+            if (created)
+                item->SetState(ITEM_REMOVED, player);
+            return 1;
+        }
+
+        Item* stored = player->StoreItem(dest, item, true);
+        if (stored)
+        {
+            if (created)
+            {
+                player->ItemAddedQuestCheck(stored->GetEntry(), count);
+                player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_RECEIVE_EPIC_ITEM, stored->GetEntry(), count);
+                player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_OWN_ITEM, stored->GetEntry(), count);
+            }
+
+            player->SendNewItem(stored, count, true, false);
+        }
+
+        YLA::Push(L, stored);
+        return 1;
+    }
+
+    /**
+     * Places an item in the [Player]'s bank (main bank or bank bags).
+     *
+     * @proto placedItem = (item[, bag, slot])
+     * @proto placedItem = (entry, count, bag, slot, randomPropertyId)
+     * @param [Item] item : item to place
+     * @param uint32 entry : entry of the item to create and place
+     * @param uint32 count = 1 : amount of the item to create (entry only)
+     * @param uint32 bag = 0 (NULL_BAG) : explicit bag (255 for main bank); omit for automatic placement
+     * @param uint32 slot = 255 (NULL_SLOT) : explicit slot (39-66 for main bank, 67-73 for bank bags); omit for automatic placement
+     * @param int32 randomPropertyId = 0 : random property/suffix ID (entry only, 0 rolls a random one)
+     * @return [Item] placedItem : the stored item or nil
+     */
+    int PlaceItemInBank(lua_State* L, Player* player)
+    {
+        Item* item = YLA::CHECKOBJ<Item>(L, 2, false);
+        uint32 count = 1;
+        uint32 bag = NULL_BAG;
+        uint32 slot = NULL_SLOT;
+        bool created = false;
+
+        if (item)
+        {
+            count = item->GetCount();
+            bag = YLA::CHECKVAL<uint32>(L, 3, uint32(NULL_BAG));
+            slot = YLA::CHECKVAL<uint32>(L, 4, uint32(NULL_SLOT));
+        }
+        else
+        {
+            uint32 entry = YLA::CHECKVAL<uint32>(L, 2);
+            count = YLA::CHECKVAL<uint32>(L, 3, 1);
+            bag = YLA::CHECKVAL<uint32>(L, 4, uint32(NULL_BAG));
+            slot = YLA::CHECKVAL<uint32>(L, 5, uint32(NULL_SLOT));
+            int32 randomPropertyId = YLA::CHECKVAL<int32>(L, 6, 0);
+
+            item = Item::CreateItem(entry, count, player, false, randomPropertyId);
+            created = true;
+            if (!item)
+                return 1;
+            PrepareItemForPlacement(item);
+        }
+
+        if (!created && item->GetOwnerGUID() == player->GetGUID()
+            && player->GetItemByPos(item->GetBagSlot(), item->GetSlot()) == item)
+            player->RemoveItem(item->GetBagSlot(), item->GetSlot(), true);
+
+        ItemPosCountVec dest;
+        InventoryResult msg = player->CanBankItem(uint8(bag), uint8(slot), dest, item, false);
+        if (msg != EQUIP_ERR_OK)
+        {
+            if (created)
+                item->SetState(ITEM_REMOVED, player);
+            return 1;
+        }
+
+        Item* stored = player->BankItem(dest, item, true);
+        if (stored)
+        {
+            if (created)
+            {
+                player->ItemAddedQuestCheck(stored->GetEntry(), count);
+                player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_RECEIVE_EPIC_ITEM, stored->GetEntry(), count);
+                player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_OWN_ITEM, stored->GetEntry(), count);
+            }
+
+            player->SendNewItem(stored, count, true, false);
+        }
+
+        YLA::Push(L, stored);
         return 1;
     }
     
