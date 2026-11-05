@@ -184,7 +184,7 @@ namespace LuaGroup
         int tbl = lua_gettop(L);
         uint32 i = 0;
 
-        std::lock_guard<std::recursive_mutex> lock(*sGroupMgr->GetSocialLock());
+        GroupSocialLock lock;
         for (GroupReference* itr = group->GetFirstMember(); itr; itr = itr->next())
         {
             Player* member = itr->GetSource();
