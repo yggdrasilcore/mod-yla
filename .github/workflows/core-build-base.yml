@@ -58,7 +58,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'yggdrasilcore/mod-shadows'
-          ref: 'master'
+          # TODO: revert to 'master' after the ShadowAI spell/movement API PR merges
+          ref: 'clean-up-instance-scripting'
           path: 'modules/mod-shadows'
           fetch-depth: 1
 
