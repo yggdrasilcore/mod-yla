@@ -8,7 +8,9 @@
 #define PLAYERMETHODS_H
 
 #include "Chat.h"
+#include "CharmInfo.h"
 #include "GameTime.h"
+#include "Pet.h"
 #include "AuctionHouseSearcher.h"
 #include "GossipDef.h"
 #include "YlaDefer.h"
@@ -4665,6 +4667,104 @@ namespace LuaPlayer
     int GetPet(lua_State* L, Player* player)
     {
         YLA::Push(L, player->GetPet());
+        return 1;
+    }
+
+    /**
+     * Enables or disables autocast of a pet/guardian spell for the [Player],
+     * mirroring the client autocast opcode: every controlled pet/guardian that
+     * knows the spell is toggled.
+     *
+     * @param uint32 spellId : pet spell ID
+     * @param bool enabled : `true` to enable autocast, `false` to disable it
+     * @return bool toggled
+     */
+    int SetPetSpellAutocast(lua_State* L, Player* player)
+    {
+        uint32 spellId = YLA::CHECKVAL<uint32>(L, 2);
+        bool enabled = YLA::CHECKVAL<bool>(L, 3);
+
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+        if (!spellInfo || !spellInfo->IsAutocastable())
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+
+        bool toggled = false;
+        for (Unit* unit : player->m_Controlled)
+        {
+            if (!unit || !unit->HasSpell(spellId))
+                continue;
+
+            CharmInfo* charmInfo = unit->GetCharmInfo();
+            if (!charmInfo)
+                continue;
+
+            if (Pet* pet = unit->ToPet())
+                pet->ToggleAutocast(spellInfo, enabled);
+            else
+                charmInfo->ToggleCreatureAutocast(spellInfo, enabled);
+
+            charmInfo->SetSpellAutocast(spellInfo, enabled);
+            toggled = true;
+        }
+
+        YLA::Push(L, toggled);
+        return 1;
+    }
+
+    /**
+     * Returns `true` if autocast is enabled for the pet/guardian spell on the
+     * [Player], `false` otherwise.
+     *
+     * @param uint32 spellId : pet spell ID
+     * @return bool enabled
+     */
+    int IsPetSpellAutocast(lua_State* L, Player* player)
+    {
+        uint32 spellId = YLA::CHECKVAL<uint32>(L, 2);
+
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+        if (!spellInfo || !spellInfo->IsAutocastable())
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+
+        for (Unit* unit : player->m_Controlled)
+        {
+            if (!unit || !unit->HasSpell(spellId))
+                continue;
+
+            if (Pet* pet = unit->ToPet())
+            {
+                for (uint32 autoSpell : pet->m_autospells)
+                {
+                    if (autoSpell == spellId)
+                    {
+                        YLA::Push(L, true);
+                        return 1;
+                    }
+                }
+                continue;
+            }
+
+            if (CharmInfo* charmInfo = unit->GetCharmInfo())
+            {
+                for (uint8 i = 0; i < MAX_SPELL_CHARM; ++i)
+                {
+                    CharmSpellInfo* charmSpell = charmInfo->GetCharmSpell(i);
+                    if (charmSpell->GetAction() == spellId && charmSpell->GetType() == ACT_ENABLED)
+                    {
+                        YLA::Push(L, true);
+                        return 1;
+                    }
+                }
+            }
+        }
+
+        YLA::Push(L, false);
         return 1;
     }
 
