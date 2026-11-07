@@ -607,6 +607,7 @@ YLARegister<Player> PlayerMethods[] =
     { "GetBonusTalentCount", &LuaPlayer::GetBonusTalentCount },
     { "GetKnownTaxiNodes", &LuaPlayer::GetKnownTaxiNodes },
     { "GetPet", &LuaPlayer::GetPet },
+    { "IsPetSpellAutocast", &LuaPlayer::IsPetSpellAutocast },
     { "GetPetCount", &LuaPlayer::GetPetCount },
     { "GetStabledPetCount", &LuaPlayer::GetStabledPetCount },
     { "GetMaxStableSlots", &LuaPlayer::GetMaxStableSlots },
@@ -618,6 +619,7 @@ YLARegister<Player> PlayerMethods[] =
     { "GetMostPointsTalentTree", &LuaPlayer::GetMostPointsTalentTree },
 
     // Setters
+    { "SetPetSpellAutocast", &LuaPlayer::SetPetSpellAutocast },
     { "SetTemporaryUnsummonedPetNumber", &LuaPlayer::SetTemporaryUnsummonedPetNumber },
     { "SetLastPetNumber", &LuaPlayer::SetLastPetNumber },
     { "SetLastPetSpell", &LuaPlayer::SetLastPetSpell },
@@ -930,7 +932,17 @@ YLARegister<ShadowPlayer> ShadowMethods[] =
     { "SendCommand", &LuaShadow::SendCommand },
     { "HasStrategy", &LuaShadow::HasStrategy },
     { "GetStrategies", &LuaShadow::GetStrategies },
+    { "GetAllStrategies", &LuaShadow::GetAllStrategies },
+    { "ToggleCombatStrategy", &LuaShadow::ToggleCombatStrategy },
+    { "ToggleNonCombatStrategy", &LuaShadow::ToggleNonCombatStrategy },
+    { "ToggleDeadStrategy", &LuaShadow::ToggleDeadStrategy },
     { "DoAction", &LuaShadow::DoAction },
+    { "EnableSpell", &LuaShadow::EnableSpell },
+    { "DisableSpell", &LuaShadow::DisableSpell },
+    { "IsSpellEnabled", &LuaShadow::IsSpellEnabled },
+    { "SuppressMovement", &LuaShadow::SuppressMovement },
+    { "ClearMovementSuppression", &LuaShadow::ClearMovementSuppression },
+    { "IsMovementSuppressed", &LuaShadow::IsMovementSuppressed },
 
     { NULL, NULL }
 };
