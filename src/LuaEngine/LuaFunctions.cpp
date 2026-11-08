@@ -28,6 +28,7 @@ extern "C"
 #include "GroupMethods.h"
 #include "GuildMethods.h"
 #include "GameObjectMethods.h"
+#include "DynamicObjectMethods.h"
 #include "YLAQueryMethods.h"
 #include "AuraMethods.h"
 #include "ItemMethods.h"
@@ -284,9 +285,11 @@ YLARegister<WorldObject> WorldObjectMethods[] =
     { "GetPlayersInRange", &LuaWorldObject::GetPlayersInRange },
     { "GetCreaturesInRange", &LuaWorldObject::GetCreaturesInRange },
     { "GetGameObjectsInRange", &LuaWorldObject::GetGameObjectsInRange },
+    { "GetDynamicObjectsInRange", &LuaWorldObject::GetDynamicObjectsInRange },
     { "GetNearestPlayer", &LuaWorldObject::GetNearestPlayer },
     { "GetNearestGameObject", &LuaWorldObject::GetNearestGameObject },
     { "GetNearestCreature", &LuaWorldObject::GetNearestCreature },
+    { "GetNearestDynamicObject", &LuaWorldObject::GetNearestDynamicObject },
     { "GetNearObject", &LuaWorldObject::GetNearObject },
     { "GetNearObjects", &LuaWorldObject::GetNearObjects },
     { "GetDistance", &LuaWorldObject::GetDistance },
@@ -1070,6 +1073,20 @@ YLARegister<GameObject> GameObjectMethods[] =
     { "Respawn", &LuaGameObject::Respawn },
     { "SaveToDB", &LuaGameObject::SaveToDB },
     { "AddLoot", &LuaGameObject::AddLoot },
+
+    { NULL, NULL }
+};
+
+YLARegister<DynamicObject> DynamicObjectMethods[] =
+{
+    // Getters
+    { "GetSpellId", &LuaDynamicObject::GetSpellId },
+    { "GetCaster", &LuaDynamicObject::GetCaster },
+    { "GetRadius", &LuaDynamicObject::GetRadius },
+    { "GetDuration", &LuaDynamicObject::GetDuration },
+
+    // Boolean
+    { "IsViewpoint", &LuaDynamicObject::IsViewpoint },
 
     { NULL, NULL }
 };
@@ -2049,6 +2066,11 @@ void RegisterFunctions(YLA* E)
     YLATemplate<Corpse>::SetMethods(E, ObjectMethods);
     YLATemplate<Corpse>::SetMethods(E, WorldObjectMethods);
     YLATemplate<Corpse>::SetMethods(E, CorpseMethods);
+
+    YLATemplate<DynamicObject>::Register(E, "DynamicObject");
+    YLATemplate<DynamicObject>::SetMethods(E, ObjectMethods);
+    YLATemplate<DynamicObject>::SetMethods(E, WorldObjectMethods);
+    YLATemplate<DynamicObject>::SetMethods(E, DynamicObjectMethods);
 
     YLATemplate<Item>::Register(E, "Item");
     YLATemplate<Item>::SetMethods(E, ObjectMethods);
