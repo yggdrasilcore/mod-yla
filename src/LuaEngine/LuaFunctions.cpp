@@ -2031,16 +2031,16 @@ void RegisterFunctions(YLA* E)
     YLATemplate<Object>::Register(E, "Object");
     YLATemplate<Object>::SetMethods(E, ObjectMethods);
 
-    YLATemplate<WorldObject>::Register(E, "WorldObject");
+    YLATemplate<WorldObject>::Register(E, "WorldObject", false, &YLATemplate<Object>::typeInfo);
     YLATemplate<WorldObject>::SetMethods(E, ObjectMethods);
     YLATemplate<WorldObject>::SetMethods(E, WorldObjectMethods);
 
-    YLATemplate<Unit>::Register(E, "Unit");
+    YLATemplate<Unit>::Register(E, "Unit", false, &YLATemplate<WorldObject>::typeInfo);
     YLATemplate<Unit>::SetMethods(E, ObjectMethods);
     YLATemplate<Unit>::SetMethods(E, WorldObjectMethods);
     YLATemplate<Unit>::SetMethods(E, UnitMethods);
 
-    YLATemplate<Player>::Register(E, "Player");
+    YLATemplate<Player>::Register(E, "Player", false, &YLATemplate<Unit>::typeInfo);
     YLATemplate<Player>::SetMethods(E, ObjectMethods);
     YLATemplate<Player>::SetMethods(E, WorldObjectMethods);
     YLATemplate<Player>::SetMethods(E, UnitMethods);
@@ -2050,7 +2050,7 @@ void RegisterFunctions(YLA* E)
     // Shadow: sub-class of Player for mod-shadows bots. Inherits the full
     // Player chain plus bot-specific ShadowMethods. Bots are viewed as
     // Shadows via Player:ToShadow() and converted back via Shadow:ToPlayer().
-    YLATemplate<ShadowPlayer>::Register(E, "Shadow");
+    YLATemplate<ShadowPlayer>::Register(E, "Shadow", false, &YLATemplate<Player>::typeInfo);
     YLATemplate<ShadowPlayer>::SetMethods(E, ObjectMethods);
     YLATemplate<ShadowPlayer>::SetMethods(E, WorldObjectMethods);
     YLATemplate<ShadowPlayer>::SetMethods(E, UnitMethods);
@@ -2058,34 +2058,34 @@ void RegisterFunctions(YLA* E)
     YLATemplate<ShadowPlayer>::SetMethods(E, PlayerShadowMethods);
     YLATemplate<ShadowPlayer>::SetMethods(E, ShadowMethods);
 
-    YLATemplate<Creature>::Register(E, "Creature");
+    YLATemplate<Creature>::Register(E, "Creature", false, &YLATemplate<Unit>::typeInfo);
     YLATemplate<Creature>::SetMethods(E, ObjectMethods);
     YLATemplate<Creature>::SetMethods(E, WorldObjectMethods);
     YLATemplate<Creature>::SetMethods(E, UnitMethods);
     YLATemplate<Creature>::SetMethods(E, CreatureMethods);
 
-    YLATemplate<GameObject>::Register(E, "GameObject");
+    YLATemplate<GameObject>::Register(E, "GameObject", false, &YLATemplate<WorldObject>::typeInfo);
     YLATemplate<GameObject>::SetMethods(E, ObjectMethods);
     YLATemplate<GameObject>::SetMethods(E, WorldObjectMethods);
     YLATemplate<GameObject>::SetMethods(E, GameObjectMethods);
     
-    YLATemplate<Transport>::Register(E, "Transport");
+    YLATemplate<Transport>::Register(E, "Transport", false, &YLATemplate<GameObject>::typeInfo);
     YLATemplate<Transport>::SetMethods(E, ObjectMethods);
     YLATemplate<Transport>::SetMethods(E, WorldObjectMethods);
     YLATemplate<Transport>::SetMethods(E, GameObjectMethods);
     YLATemplate<Transport>::SetMethods(E, TransportMethods);
 
-    YLATemplate<Corpse>::Register(E, "Corpse");
+    YLATemplate<Corpse>::Register(E, "Corpse", false, &YLATemplate<WorldObject>::typeInfo);
     YLATemplate<Corpse>::SetMethods(E, ObjectMethods);
     YLATemplate<Corpse>::SetMethods(E, WorldObjectMethods);
     YLATemplate<Corpse>::SetMethods(E, CorpseMethods);
 
-    YLATemplate<DynamicObject>::Register(E, "DynamicObject");
+    YLATemplate<DynamicObject>::Register(E, "DynamicObject", false, &YLATemplate<WorldObject>::typeInfo);
     YLATemplate<DynamicObject>::SetMethods(E, ObjectMethods);
     YLATemplate<DynamicObject>::SetMethods(E, WorldObjectMethods);
     YLATemplate<DynamicObject>::SetMethods(E, DynamicObjectMethods);
 
-    YLATemplate<Item>::Register(E, "Item");
+    YLATemplate<Item>::Register(E, "Item", false, &YLATemplate<Object>::typeInfo);
     YLATemplate<Item>::SetMethods(E, ObjectMethods);
     YLATemplate<Item>::SetMethods(E, ItemMethods);
 

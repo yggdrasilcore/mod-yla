@@ -1647,7 +1647,7 @@ YLAObject* YLA::CHECKTYPE(lua_State* luastate, int narg, const char* tname, bool
 
     YLAObject** ptrHold = static_cast<YLAObject**>(lua_touserdata(luastate, narg));
 
-    if (!ptrHold || (tname && (*ptrHold)->GetTypeName() != tname))
+    if (!ptrHold || (tname && !(*ptrHold)->IsA(tname)))
     {
         if (error)
         {

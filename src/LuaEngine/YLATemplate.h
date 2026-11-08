@@ -21,6 +21,7 @@ extern "C"
 #include "ObjectAccessor.h"
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
+#include <cstring>
 
 enum MethodRegisterState
 {
@@ -108,6 +109,20 @@ public:
     }
 };
 
+struct YLAType
+{
+    const char* name;
+    const YLAType* parent;
+
+    bool IsA(const char* type) const
+    {
+        for (const YLAType* t = this; t; t = t->parent)
+            if (t->name && type && std::strcmp(t->name, type) == 0)
+                return true;
+        return false;
+    }
+};
+
 class YLAObject
 {
 public:
@@ -128,7 +143,9 @@ public:
     // Returns whether the object can be invalidated or not
     bool CanInvalidate() const { return _invalidate; }
     // Returns pointer to the wrapped object's type name
-    const char* GetTypeName() const { return type_name; }
+    const char* GetTypeName() const { return type_info ? type_info->name : nullptr; }
+    // Returns whether the wrapped object is of the given type or a subtype of it
+    bool IsA(const char* type) const { return type_info && type_info->IsA(type); }
     ObjectGuid GetPlayerGuid() const { return playerGuid; }
 
     // Sets the object pointer that is wrapped
@@ -166,7 +183,7 @@ private:
     uint64 callstackid;
     bool _invalidate;
     void* object;
-    const char* type_name;
+    const YLAType* type_info;
     ObjectGuid playerGuid = ObjectGuid::Empty;
 };
 
@@ -191,12 +208,13 @@ class YLATemplate
 public:
     static const char* tname;
     static bool manageMemory;
+    static YLAType typeInfo;
 
     // name will be used as type name
     // If gc is true, lua will handle the memory management for object pushed
     // gc should be used if pushing for example WorldPacket,
     // that will only be needed on lua side and will not be managed by TC/mangos/<core>
-    static void Register(YLA* E, const char* name, bool gc = false)
+    static void Register(YLA* E, const char* name, bool gc = false, const YLAType* parent = nullptr)
     {
         ASSERT(E);
         ASSERT(name);
@@ -210,6 +228,8 @@ public:
 
         tname = name;
         manageMemory = gc;
+        typeInfo.name = name;
+        typeInfo.parent = parent;
 
         // create metatable for userdata of this type
         luaL_newmetatable(E->L, tname);
@@ -534,17 +554,19 @@ public:
 };
 
 template<typename T>
-YLAObject::YLAObject(T * obj, bool manageMemory, uint64 snapId) : callstackid(1), _invalidate(!manageMemory), object(obj), type_name(YLATemplate<T>::tname)
+YLAObject::YLAObject(T * obj, bool manageMemory, uint64 snapId) : callstackid(1), _invalidate(!manageMemory), object(obj), type_info(&YLATemplate<T>::typeInfo),
+    playerGuid((obj && YLATemplate<T>::typeInfo.IsA("Player")) ? static_cast<Player*>(static_cast<void*>(obj))->GetGUID() : ObjectGuid::Empty)
 {
     SetValid(true, snapId);
 }
 
-inline YLAObject::YLAObject(Player* obj, bool manageMemory, uint64 snapId) : callstackid(1), _invalidate(!manageMemory), object(obj), type_name(YLATemplate<Player>::tname), playerGuid(obj ? obj->GetGUID() : ObjectGuid::Empty)
+inline YLAObject::YLAObject(Player* obj, bool manageMemory, uint64 snapId) : callstackid(1), _invalidate(!manageMemory), object(obj), type_info(&YLATemplate<Player>::typeInfo), playerGuid(obj ? obj->GetGUID() : ObjectGuid::Empty)
 {
     SetValid(true, snapId);
 }
 
 template<typename T> const char* YLATemplate<T>::tname = NULL;
 template<typename T> bool YLATemplate<T>::manageMemory = false;
+template<typename T> YLAType YLATemplate<T>::typeInfo = { nullptr, nullptr };
 
 #endif
