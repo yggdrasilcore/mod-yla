@@ -9,8 +9,7 @@
 
 #include "LuaEngine.h"
 #include "ScriptMgr.h"
-
-struct ScriptedAI;
+#include "ScriptedCreature.h"
 
 struct YLACreatureAI : ScriptedAI
 {
