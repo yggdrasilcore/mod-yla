@@ -360,6 +360,318 @@ namespace LuaShadow
         return 1;
 #endif
     }
+
+    /**
+     * Enables a spell for the [Shadow] by removing it from the bot's
+     * ignored-spell list (the same list used by the `ss` chat command).
+     *
+     * @param uint32 spellId : spell ID
+     * @return bool changed
+     */
+    inline int EnableSpell(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        uint32 spellId = YLA::CHECKVAL<uint32>(L, 2);
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            YLA::Push(L, ai->SetSpellEnabled(spellId, true));
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
+
+    /**
+     * Disables a spell for the [Shadow] by adding it to the bot's
+     * ignored-spell list (the same list used by the `ss` chat command).
+     *
+     * @param uint32 spellId : spell ID
+     * @return bool changed
+     */
+    inline int DisableSpell(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        uint32 spellId = YLA::CHECKVAL<uint32>(L, 2);
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            YLA::Push(L, ai->SetSpellEnabled(spellId, false));
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
+
+    /**
+     * Returns `true` if the [Shadow] is allowed to cast the spell, `false`
+     * otherwise (including when the bot/AI is unavailable).
+     *
+     * @param uint32 spellId : spell ID
+     * @return bool enabled
+     */
+    inline int IsSpellEnabled(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        uint32 spellId = YLA::CHECKVAL<uint32>(L, 2);
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            YLA::Push(L, ai->IsSpellEnabled(spellId));
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
+
+    /**
+     * Returns the strategies active on the [Shadow] for every state.
+     * The result is keyed by state: 0 = combat, 1 = non-combat, 2 = dead.
+     *
+     * @return table strategiesByState
+     */
+    inline int GetAllStrategies(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        lua_createtable(L, BOT_STATE_MAX, 0);
+        int tbl = lua_gettop(L);
+        if (shadow && ShadowPlayer::IsLive(shadow))
+        {
+            if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+            {
+                for (int state = 0; state < BOT_STATE_MAX; ++state)
+                {
+                    lua_createtable(L, 0, 0);
+                    int list = lua_gettop(L);
+                    uint32 i = 0;
+                    for (std::string const& name : ai->GetStrategies(static_cast<BotState>(state)))
+                    {
+                        YLA::Push(L, name);
+                        lua_rawseti(L, list, ++i);
+                    }
+                    lua_rawseti(L, tbl, state);
+                }
+            }
+        }
+        lua_settop(L, tbl);
+        return 1;
+#else
+        (void)shadow;
+        lua_createtable(L, 0, 0);
+        return 1;
+#endif
+    }
+
+    /**
+     * Changes the combat strategies of the [Shadow], using the same syntax as
+     * the `co` command: `+name` adds, `-name` removes and `~name` replaces the
+     * currently active strategies. Multiple entries can be comma-separated.
+     *
+     * @param string strategies : strategy change text
+     * @return bool changed
+     */
+    inline int ToggleCombatStrategy(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        std::string strategies = YLA::CHECKVAL<std::string>(L, 2);
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            ai->ChangeStrategy(strategies, BOT_STATE_COMBAT);
+            YLA::Push(L, true);
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
+
+    /**
+     * Changes the non-combat strategies of the [Shadow], using the same syntax
+     * as the `nc` command: `+name` adds, `-name` removes and `~name` replaces
+     * the currently active strategies. Multiple entries can be comma-separated.
+     *
+     * @param string strategies : strategy change text
+     * @return bool changed
+     */
+    inline int ToggleNonCombatStrategy(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        std::string strategies = YLA::CHECKVAL<std::string>(L, 2);
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            ai->ChangeStrategy(strategies, BOT_STATE_NON_COMBAT);
+            YLA::Push(L, true);
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
+
+    /**
+     * Changes the dead strategies of the [Shadow], using the same syntax as the
+     * `co` / `nc` commands: `+name` adds, `-name` removes and `~name` replaces
+     * the currently active strategies. Multiple entries can be comma-separated.
+     *
+     * @param string strategies : strategy change text
+     * @return bool changed
+     */
+    inline int ToggleDeadStrategy(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        std::string strategies = YLA::CHECKVAL<std::string>(L, 2);
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            ai->ChangeStrategy(strategies, BOT_STATE_DEAD);
+            YLA::Push(L, true);
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
+
+    /**
+     * Suppresses all mod-shadows movement handling for the given duration so
+     * Lua can drive the bot's movement completely. Any movement currently in
+     * progress is stopped. Passing 0 clears the suppression immediately.
+     *
+     * @param uint32 durationMs : duration in milliseconds (0 = clear)
+     * @return bool applied
+     */
+    inline int SuppressMovement(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        uint32 durationMs = YLA::CHECKVAL<uint32>(L, 2);
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            ai->SuppressMovement(durationMs);
+            YLA::Push(L, true);
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
+
+    /**
+     * Clears any active movement suppression for the [Shadow] immediately.
+     *
+     * @return bool cleared
+     */
+    inline int ClearMovementSuppression(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            ai->ClearMovementSuppression();
+            YLA::Push(L, true);
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
+
+    /**
+     * Returns `true` while mod-shadows movement handling is suppressed for the
+     * [Shadow], `false` otherwise.
+     *
+     * @return bool suppressed
+     */
+    inline int IsMovementSuppressed(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            YLA::Push(L, ai->IsMovementSuppressed());
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
 }
 
 /***
