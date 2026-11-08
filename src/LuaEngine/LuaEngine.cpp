@@ -1396,6 +1396,9 @@ void YLA::Push(lua_State* luastate, WorldObject const* obj)
         case TYPEID_CORPSE:
             Push(luastate, obj->ToCorpse());
             break;
+        case TYPEID_DYNAMICOBJECT:
+            Push(luastate, obj->ToDynObject());
+            break;
         default:
             YLATemplate<WorldObject>::Push(luastate, obj);
     }
@@ -1420,6 +1423,9 @@ void YLA::Push(lua_State* luastate, Object const* obj)
             break;
         case TYPEID_CORPSE:
             Push(luastate, obj->ToCorpse());
+            break;
+        case TYPEID_DYNAMICOBJECT:
+            Push(luastate, obj->ToDynObject());
             break;
         default:
             YLATemplate<Object>::Push(luastate, obj);
