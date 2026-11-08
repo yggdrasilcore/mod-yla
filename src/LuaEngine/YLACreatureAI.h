@@ -8,6 +8,7 @@
 #define _YLA_CREATURE_AI_H
 
 #include "LuaEngine.h"
+#include "ScriptMgr.h"
 
 struct ScriptedAI;
 
@@ -170,5 +171,19 @@ struct YLACreatureAI : ScriptedAI
             ScriptedAI::OwnerAttacked(target);
     }
 };
+
+// C++ and SmartAI scripts own the creature's AI slot. Lua may observe their
+// events, but it may not replace their AI or veto their actions.
+inline bool YLA_CreatureHasNativeScript(Creature* creature)
+{
+    return creature->GetAIName() == "SmartAI" ||
+        ScriptRegistry<CreatureScript>::GetScriptById(creature->GetScriptId()) != nullptr;
+}
+
+// Lua dispatches these events itself through the Lua AI when it owns the slot.
+inline bool YLA_CreatureUsesLuaAI(Creature* creature)
+{
+    return creature && dynamic_cast<YLACreatureAI*>(creature->AI()) != nullptr;
+}
 
 #endif

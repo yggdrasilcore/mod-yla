@@ -21,6 +21,7 @@
 #include "YlaAlive.h"
 #include "Log.h"
 #include "LuaEngine.h"
+#include "YLACreatureAI.h"
 #include "Pet.h"
 #include "Player.h"
 #include "Vehicle.h"
@@ -32,6 +33,13 @@ class YLA_AllCreatureScript : public AllCreatureScript
 {
 public:
     YLA_AllCreatureScript() : AllCreatureScript("YLA_AllCreatureScript") { }
+
+    CreatureAI* GetCreatureAI(Creature* creature) const override
+    {
+        if (YLA_CreatureHasNativeScript(creature))
+            return nullptr;
+        return YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->GetAI(creature);
+    }
 
     bool CanCreatureGossipHello(Player* player, Creature* creature) override
     {
@@ -89,13 +97,6 @@ public:
         return false;
     }
 
-    CreatureAI* GetCreatureAI(Creature* creature) const override
-    {
-        if (CreatureAI* luaAI = YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->GetAI(creature))
-            return luaAI;
-        return nullptr;
-    }
-
     void OnCreatureSelectLevel(const CreatureTemplate* cinfo, Creature* creature) override
     {
         YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->OnAllCreatureSelectLevel(cinfo, creature);
@@ -104,6 +105,133 @@ public:
     void OnBeforeCreatureSelectLevel(const CreatureTemplate* cinfo, Creature* creature, uint8& level) override
     {
         YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->OnAllCreatureBeforeSelectLevel(cinfo, creature, level);
+    }
+
+    void OnAllCreatureUpdate(Creature* creature, uint32 diff) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->UpdateAI(creature, diff);
+    }
+
+    void OnCreatureSpawn(Creature* creature) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->JustRespawned(creature);
+    }
+
+    void OnCreatureMovementInform(Creature* creature, uint32 type, uint32 id) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->MovementInform(creature, type, id);
+    }
+
+    void OnCreatureDamageTaken(Creature* creature, Unit* attacker, uint32& damage) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->DamageTaken(creature, attacker, damage);
+    }
+
+    void OnCreatureReachedHome(Creature* creature) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->JustReachedHome(creature);
+    }
+
+    void OnCreatureMoveInLineOfSight(Creature* creature, Unit* who) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->MoveInLineOfSight(creature, who);
+    }
+
+    void OnCreatureKilledUnit(Creature* creature, Unit* victim) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->KilledUnit(creature, victim);
+    }
+
+    void OnCreaturePreCombat(Creature* creature, Unit* target) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->AttackStart(creature, target);
+    }
+
+    void OnCreatureHitBySpell(Creature* creature, WorldObject* caster, SpellInfo const* spell) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->SpellHit(creature, caster, spell);
+    }
+
+    void OnCreatureSpellHitTarget(Creature* creature, WorldObject* target, SpellInfo const* spell) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->SpellHitTarget(creature, target, spell);
+    }
+
+    void OnCreatureSummoned(Creature* creature, WorldObject* summoner) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        if (Unit* unit = summoner ? summoner->ToUnit() : nullptr)
+            YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->OnSummoned(creature, unit);
+    }
+
+    void OnCreatureJustSummoned(Creature* creature, Creature* summon) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->JustSummoned(creature, summon);
+    }
+
+    void OnCreatureSummonedDespawn(Creature* creature, Creature* summon) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->SummonedCreatureDespawn(creature, summon);
+    }
+
+    void OnCreatureSummonedDies(Creature* creature, Creature* summon, Unit* killer) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->SummonedCreatureDies(creature, summon, killer);
+    }
+
+    void OnCreatureReceiveEmote(Creature* creature, Player* player, uint32 emoteId) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->ReceiveEmote(creature, player, emoteId);
+    }
+
+    void OnCreatureCorpseRemoved(Creature* creature, uint32& respawnDelay) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->CorpseRemoved(creature, respawnDelay);
+    }
+
+    void OnCreatureOwnerAttackedBy(Creature* creature, Unit* attacker) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->OwnerAttackedBy(creature, attacker);
+    }
+
+    void OnCreatureOwnerAttacked(Creature* creature, Unit* target) override
+    {
+        if (YLA_CreatureUsesLuaAI(creature))
+            return;
+        YLA::GetMapStateOrGlobal(creature->GetMapId(), creature->GetInstanceId())->OwnerAttacked(creature, target);
     }
 };
 
@@ -1390,6 +1518,27 @@ public:
     {
         if (!unit) return;
         YLA::GetMapStateOrGlobal(unit->GetMapId(), unit->GetInstanceId())->OnUnitShapeshiftForm(unit, form);
+    }
+
+    void OnUnitEnterCombat(Unit* unit, Unit* victim) override
+    {
+        if (!unit || !unit->IsCreature()) return;
+        if (YLA_CreatureUsesLuaAI(unit->ToCreature())) return;
+        YLA::GetMapStateOrGlobal(unit->GetMapId(), unit->GetInstanceId())->EnterCombat(unit->ToCreature(), victim);
+    }
+
+    void OnUnitEnterEvadeMode(Unit* unit, uint8 /*evadeReason*/) override
+    {
+        if (!unit || !unit->IsCreature()) return;
+        if (YLA_CreatureUsesLuaAI(unit->ToCreature())) return;
+        YLA::GetMapStateOrGlobal(unit->GetMapId(), unit->GetInstanceId())->EnterEvadeMode(unit->ToCreature());
+    }
+
+    void OnUnitDeath(Unit* unit, Unit* killer) override
+    {
+        if (!unit || !unit->IsCreature()) return;
+        if (YLA_CreatureUsesLuaAI(unit->ToCreature())) return;
+        YLA::GetMapStateOrGlobal(unit->GetMapId(), unit->GetInstanceId())->JustDied(unit->ToCreature(), killer);
     }
 };
 
