@@ -351,6 +351,65 @@ namespace LuaWorldObject
     }
 
     /**
+     * Returns the nearest [DynamicObject] in sight of the [WorldObject] or within the given range and/or with a specific spell ID.
+     * All dynamic object types are matched.
+     *
+     * @param float range = 533.33333 : optionally set range. Default range is grid size
+     * @param uint32 spellId = 0 : optionally set the spell ID of the dynamic object to find
+     *
+     * @return [DynamicObject] nearestDynamicObject
+     */
+    int GetNearestDynamicObject(lua_State* L, WorldObject* obj)
+    {
+        float range = YLA::CHECKVAL<float>(L, 2, SIZE_OF_GRIDS);
+        uint32 spellId = YLA::CHECKVAL<uint32>(L, 3, 0);
+
+        YLAUtil::WorldObjectInRangeCheck checker(true, obj, range, TYPEMASK_DYNAMICOBJECT, spellId);
+
+        WorldObject* target = NULL;
+
+        Ycore::WorldObjectLastSearcher<YLAUtil::WorldObjectInRangeCheck> searcher(obj, target, checker);
+        Cell::VisitObjects(obj, searcher, range);
+
+        YLA::Push(L, target ? target->ToDynObject() : nullptr);
+        return 1;
+    }
+
+    /**
+     * Returns a table of [DynamicObject]s in sight of the [WorldObject] or within the given range and/or with a specific spell ID.
+     * All dynamic object types are matched.
+     *
+     * @param float range = 533.33333 : optionally set range. Default range is grid size
+     * @param uint32 spellId = 0 : optionally set the spell ID of the dynamic objects to find
+     *
+     * @return table dynamicObjectsInRange : table of [DynamicObject]s
+     */
+    int GetDynamicObjectsInRange(lua_State* L, WorldObject* obj)
+    {
+        float range = YLA::CHECKVAL<float>(L, 2, SIZE_OF_GRIDS);
+        uint32 spellId = YLA::CHECKVAL<uint32>(L, 3, 0);
+
+        std::list<WorldObject*> list;
+        YLAUtil::WorldObjectInRangeCheck checker(false, obj, range, TYPEMASK_DYNAMICOBJECT, spellId);
+
+        Ycore::WorldObjectListSearcher<YLAUtil::WorldObjectInRangeCheck> searcher(obj, list, checker);
+        Cell::VisitObjects(obj, searcher, range);
+
+        lua_createtable(L, list.size(), 0);
+        int tbl = lua_gettop(L);
+        uint32 i = 0;
+
+        for (std::list<WorldObject*>::const_iterator it = list.begin(); it != list.end(); ++it)
+        {
+            YLA::Push(L, (*it)->ToDynObject());
+            lua_rawseti(L, tbl, ++i);
+        }
+
+        lua_settop(L, tbl);
+        return 1;
+    }
+
+    /**
      * Returns nearest [WorldObject] in sight of the [WorldObject].
      * The distance, type, entry and hostility requirements the [WorldObject] must match can be passed.
      *
