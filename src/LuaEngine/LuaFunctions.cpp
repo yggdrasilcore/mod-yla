@@ -1443,6 +1443,7 @@ YLARegister<Map> MapMethods[] =
     { "GetMapId", &LuaMap::GetMapId },
     { "GetAreaId", &LuaMap::GetAreaId },
     { "GetHeight", &LuaMap::GetHeight },
+    { "GetNearestFloor", &LuaMap::GetNearestFloor },
     { "GetWorldObject", &LuaMap::GetWorldObject },
     { "GetCreatures", &LuaMap::GetCreatures },
     { "GetCreaturesByAreaId", &LuaMap::GetCreaturesByAreaId },

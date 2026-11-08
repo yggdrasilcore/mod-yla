@@ -127,6 +127,30 @@ namespace LuaMap
     }
 
     /**
+     * Returns the nearest floor of the [Map] at the given X and Y coordinates,
+     * searching downwards from the given Z.
+     *
+     * In case of no floor found nil is returned
+     *
+     * @param float x
+     * @param float y
+     * @param float z
+     * @param uint32 phasemask = 1
+     * @return float floorZ
+     */
+    int GetNearestFloor(lua_State* L, Map* map)
+    {
+        float x = YLA::CHECKVAL<float>(L, 2);
+        float y = YLA::CHECKVAL<float>(L, 3);
+        float z = YLA::CHECKVAL<float>(L, 4);
+        uint32 phasemask = YLA::CHECKVAL<uint32>(L, 5, 1);
+        float floorZ = map->GetHeight(phasemask, x, y, z);
+        if (floorZ != INVALID_HEIGHT)
+            YLA::Push(L, floorZ);
+        return 1;
+    }
+
+    /**
      * Returns the difficulty of the [Map].
      *
      * Always returns 0 if the expansion is pre-TBC.
