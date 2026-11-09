@@ -15,6 +15,8 @@ struct DBCDefinition
     void* storage;
     const std::type_info& type;
     std::function<const void*(uint32)> lookupFunction;
+    std::function<uint32()> countFunction;
+    std::function<const void*(uint32)> indexFunction;
     std::function<void(lua_State*, const void*)> pushFunction;
 };
 
@@ -28,11 +30,16 @@ extern std::vector<DBCDefinition> dbcRegistry;
         [](uint32 id) -> const void* {          \
             return store.LookupEntry(id);       \
         },                                      \
+        []() -> uint32 {                        \
+            return store.GetNumRows();          \
+        },                                      \
+        [](uint32 index) -> const void* {       \
+            return store.LookupEntry(index);    \
+        },                                      \
         [](lua_State* L, const void* entry) {   \
             auto cast_entry = static_cast<const entryType*>(entry); \
-            YLA::Push(L, *cast_entry);        \
+            YLA::Push(L, *cast_entry);          \
         }                                       \
     }
 
 #endif // YLADBCREGISTRY_H
-

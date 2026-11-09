@@ -1446,6 +1446,16 @@ void YLA::Push(lua_State* luastate, SpellEntry const& spell)
     Push(luastate, &spell);
 }
 
+void YLA::Push(lua_State* luastate, TalentEntry const& talent)
+{
+    Push(luastate, &talent);
+}
+
+void YLA::Push(lua_State* luastate, TalentTabEntry const& talentTab)
+{
+    Push(luastate, &talentTab);
+}
+
 void YLA::Push(lua_State* luastate, CreatureTemplate const* creatureTemplate)
 {
     Push<CreatureTemplate>(luastate, creatureTemplate);
