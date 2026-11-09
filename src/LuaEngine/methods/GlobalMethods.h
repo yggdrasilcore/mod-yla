@@ -4294,6 +4294,91 @@ namespace LuaGlobalFunctions
     }
 
     /**
+     * Returns all populated entries of the specified DBC (DatabaseClient) store.
+     *
+     * This enumerates the store directly from memory. Entries are pushed as
+     * their registered DBC entry objects, using the same types as [LookupEntry].
+     * Empty index slots (missing IDs) are skipped.
+     *
+     * @param string dbcName : The name of the DBC store (e.g., "Talent")
+     *
+     * @return table entries : array of DBC entry objects
+     */
+    int GetDBCEntries(lua_State* L)
+    {
+        const char* dbcName = YLA::CHECKVAL<const char*>(L, 1);
+
+        for (const auto& dbc : dbcRegistry)
+        {
+            if (dbc.name != dbcName)
+                continue;
+
+            uint32 count = dbc.countFunction();
+            lua_createtable(L, count, 0);
+
+            int index = 0;
+            for (uint32 i = 0; i < count; ++i)
+            {
+                const void* entry = dbc.indexFunction(i);
+                if (!entry)
+                    continue;
+
+                dbc.pushFunction(L, entry);
+                lua_rawseti(L, -2, ++index);
+            }
+
+            return 1;
+        }
+
+        return luaL_error(L, "Invalid DBC name: %s", dbcName);
+    }
+
+    /**
+     * Returns the number of index slots in the specified DBC (DatabaseClient) store.
+     *
+     * This includes empty slots, so it is the upper bound of valid IDs, not
+     * the number of populated entries.
+     *
+     * @param string dbcName : The name of the DBC store (e.g., "Talent")
+     *
+     * @return uint32 count
+     */
+    int GetDBCEntryCount(lua_State* L)
+    {
+        const char* dbcName = YLA::CHECKVAL<const char*>(L, 1);
+
+        for (const auto& dbc : dbcRegistry)
+        {
+            if (dbc.name == dbcName)
+            {
+                YLA::Push(L, dbc.countFunction());
+                return 1;
+            }
+        }
+
+        return luaL_error(L, "Invalid DBC name: %s", dbcName);
+    }
+
+    /**
+     * Returns the names of all DBC stores registered with the Lua engine.
+     *
+     * @return table names : array of DBC store names
+     */
+    int GetDBCNames(lua_State* L)
+    {
+        lua_createtable(L, (int)dbcRegistry.size(), 0);
+
+        int index = 0;
+        for (const auto& dbc : dbcRegistry)
+        {
+            YLA::Push(L, dbc.name);
+            lua_rawseti(L, -2, ++index);
+        }
+
+        return 1;
+    }
+
+    /**
      * Returns a value from the runtime-persistent world data cache.
      * Values are written with [Global:SetWorldData] (world state only) and
      * are readable from every state. Data survives Lua reloads and is cleared

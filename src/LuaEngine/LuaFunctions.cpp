@@ -52,6 +52,8 @@ extern "C"
 // DBCStores includes
 #include "GemPropertiesEntryMethods.h"
 #include "SpellEntryMethods.h"
+#include "TalentEntryMethods.h"
+#include "TalentTabEntryMethods.h"
 
 YLAGlobalRegister GlobalMethods[] =
 {
@@ -215,6 +217,9 @@ YLAGlobalRegister GlobalMethods[] =
     { "HttpRequest", &LuaGlobalFunctions::HttpRequest },
     { "SetOwnerHalaa", &LuaGlobalFunctions::SetOwnerHalaa, METHOD_REG_WORLD },
     { "LookupEntry", &LuaGlobalFunctions::LookupEntry },
+    { "GetDBCEntries", &LuaGlobalFunctions::GetDBCEntries },
+    { "GetDBCEntryCount", &LuaGlobalFunctions::GetDBCEntryCount },
+    { "GetDBCNames", &LuaGlobalFunctions::GetDBCNames },
     { "SetWintergraspDefenderTeam", &LuaGlobalFunctions::SetWintergraspDefenderTeam, METHOD_REG_WORLD },
     { "SetWintergraspTimer", &LuaGlobalFunctions::SetWintergraspTimer, METHOD_REG_WORLD },
     { "StartWintergraspBattle", &LuaGlobalFunctions::StartWintergraspBattle, METHOD_REG_WORLD },
@@ -1670,6 +1675,33 @@ YLARegister<GemPropertiesEntry> GemPropertiesEntryMethods[] =
     { NULL, NULL }
 };
 
+YLARegister<TalentEntry> TalentEntryMethods[] =
+{
+    // Getters
+    { "GetId", &LuaTalentEntry::GetId },
+    { "GetTab", &LuaTalentEntry::GetTab },
+    { "GetRow", &LuaTalentEntry::GetRow },
+    { "GetCol", &LuaTalentEntry::GetCol },
+    { "GetRank", &LuaTalentEntry::GetRank },
+    { "GetRanks", &LuaTalentEntry::GetRanks },
+    { "GetDependsOn", &LuaTalentEntry::GetDependsOn },
+    { "GetDependsOnRank", &LuaTalentEntry::GetDependsOnRank },
+    { "GetAddToSpellBook", &LuaTalentEntry::GetAddToSpellBook },
+
+    { NULL, NULL }
+};
+
+YLARegister<TalentTabEntry> TalentTabEntryMethods[] =
+{
+    // Getters
+    { "GetId", &LuaTalentTabEntry::GetId },
+    { "GetClassMask", &LuaTalentTabEntry::GetClassMask },
+    { "GetPetTalentMask", &LuaTalentTabEntry::GetPetTalentMask },
+    { "GetTabPage", &LuaTalentTabEntry::GetTabPage },
+
+    { NULL, NULL }
+};
+
 YLARegister<SpellEntry> SpellEntryMethods[] =
 {
     // Getters
@@ -2145,6 +2177,12 @@ void RegisterFunctions(YLA* E)
 
     YLATemplate<SpellEntry>::Register(E, "SpellEntry");
     YLATemplate<SpellEntry>::SetMethods(E, SpellEntryMethods);
+
+    YLATemplate<TalentEntry>::Register(E, "TalentEntry");
+    YLATemplate<TalentEntry>::SetMethods(E, TalentEntryMethods);
+
+    YLATemplate<TalentTabEntry>::Register(E, "TalentTabEntry");
+    YLATemplate<TalentTabEntry>::SetMethods(E, TalentTabEntryMethods);
 
     YLATemplate<CreatureTemplate>::Register(E, "CreatureTemplate");
 
