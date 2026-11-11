@@ -385,6 +385,63 @@ namespace LuaItem
     }
 
     /**
+     * Returns the [Item]s enchantment duration by enchant slot specified
+     *
+     * @param [EnchantmentSlot] enchantSlot : the enchant slot specified
+     * @return uint32 duration
+     */
+    int GetEnchantmentDuration(lua_State* L, Item* item)
+    {
+        uint32 enchant_slot = YLA::CHECKVAL<uint32>(L, 2);
+
+        if (enchant_slot >= MAX_ENCHANTMENT_SLOT)
+            return luaL_argerror(L, 2, "valid EnchantmentSlot expected");
+
+        YLA::Push(L, item->GetEnchantmentDuration(EnchantmentSlot(enchant_slot)));
+        return 1;
+    }
+
+    /**
+     * Returns the [Item]s enchantment charges by enchant slot specified
+     *
+     * @param [EnchantmentSlot] enchantSlot : the enchant slot specified
+     * @return uint32 charges
+     */
+    int GetEnchantmentCharges(lua_State* L, Item* item)
+    {
+        uint32 enchant_slot = YLA::CHECKVAL<uint32>(L, 2);
+
+        if (enchant_slot >= MAX_ENCHANTMENT_SLOT)
+            return luaL_argerror(L, 2, "valid EnchantmentSlot expected");
+
+        YLA::Push(L, item->GetEnchantmentCharges(EnchantmentSlot(enchant_slot)));
+        return 1;
+    }
+
+    /**
+     * Returns the actual random property/suffix ID applied to this [Item].
+     * Positive values are random properties, negative values are random suffixes.
+     *
+     * @return int32 randomPropertyId
+     */
+    int GetRandomPropertyId(lua_State* L, Item* item)
+    {
+        YLA::Push(L, item->GetItemRandomPropertyId());
+        return 1;
+    }
+
+    /**
+     * Returns the suffix factor (property seed) applied to this [Item].
+     *
+     * @return uint32 suffixFactor
+     */
+    int GetSuffixFactor(lua_State* L, Item* item)
+    {
+        YLA::Push(L, item->GetItemSuffixFactor());
+        return 1;
+    }
+
+    /**
      * Returns the spell ID tied to the [Item] by spell index
      *
      * @param uint32 spellIndex : the spell index specified
@@ -696,13 +753,134 @@ namespace LuaItem
         if (slot >= MAX_INSPECTED_ENCHANTMENT_SLOT)
             return luaL_argerror(L, 2, "valid EnchantmentSlot expected");
 
-        owner->ApplyEnchantment(item, slot, false);
+        bool equipped = item->IsEquipped() && owner->GetItemByPos(item->GetBagSlot(), item->GetSlot()) == item;
+
+        if (equipped)
+            owner->ApplyEnchantment(item, slot, false);
+
         item->SetEnchantment(slot, enchant, 0, 0);
-        owner->ApplyEnchantment(item, slot, true);
+
+        if (equipped)
+            owner->ApplyEnchantment(item, slot, true);
+
         YLA::Push(L, true);
         return 1;
     }
 
+    /**
+     * Sets the duration of the specified enchantment slot of the [Item].
+     *
+     * @param [EnchantmentSlot] enchantSlot : the enchant slot to modify
+     * @param uint32 duration : duration in milliseconds
+     */
+    int SetEnchantmentDuration(lua_State* L, Item* item)
+    {
+        EnchantmentSlot slot = (EnchantmentSlot)YLA::CHECKVAL<uint32>(L, 2);
+        if (slot >= MAX_ENCHANTMENT_SLOT)
+            return luaL_argerror(L, 2, "valid EnchantmentSlot expected");
+
+        uint32 duration = YLA::CHECKVAL<uint32>(L, 3);
+        item->SetEnchantmentDuration(slot, duration, item->GetOwner());
+        return 0;
+    }
+
+    /**
+     * Sets the charges of the specified enchantment slot of the [Item].
+     *
+     * @param [EnchantmentSlot] enchantSlot : the enchant slot to modify
+     * @param uint32 charges : number of charges
+     */
+    int SetEnchantmentCharges(lua_State* L, Item* item)
+    {
+        EnchantmentSlot slot = (EnchantmentSlot)YLA::CHECKVAL<uint32>(L, 2);
+        if (slot >= MAX_ENCHANTMENT_SLOT)
+            return luaL_argerror(L, 2, "valid EnchantmentSlot expected");
+
+        uint32 charges = YLA::CHECKVAL<uint32>(L, 3);
+        item->SetEnchantmentCharges(slot, charges);
+        return 0;
+    }
+
+    /**
+     * Sockets a gem (by gem item entry) into the specified socket of the [Item].
+     *
+     * The gem's `GemProperties.dbc` spell item enchantment is applied to the matching
+     * socket enchantment slot (0, 1 or 2).
+     *
+     * @param uint32 gemEntry : entry of the gem item
+     * @param uint32 socketIndex = 0 : socket index (0-2)
+     * @return bool success : 'true' if the gem was socketed, otherwise 'false'
+     */
+    int SetGem(lua_State* L, Item* item)
+    {
+        uint32 gemEntry = YLA::CHECKVAL<uint32>(L, 2);
+        uint32 socketIndex = YLA::CHECKVAL<uint32>(L, 3, 0);
+
+        if (socketIndex >= MAX_GEM_SOCKETS)
+            return luaL_argerror(L, 3, "valid socket index expected");
+
+        ItemTemplate const* gemProto = sObjectMgr->GetItemTemplate(gemEntry);
+        if (!gemProto || !gemProto->GemProperties)
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+
+        GemPropertiesEntry const* gem = sGemPropertiesStore.LookupEntry(gemProto->GemProperties);
+        if (!gem || !gem->spellitemenchantement || !sSpellItemEnchantmentStore.LookupEntry(gem->spellitemenchantement))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+
+        EnchantmentSlot slot = EnchantmentSlot(SOCK_ENCHANTMENT_SLOT + socketIndex);
+        Player* owner = item->GetOwner();
+        if (!owner)
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+
+        bool equipped = item->IsEquipped() && owner->GetItemByPos(item->GetBagSlot(), item->GetSlot()) == item;
+
+        if (equipped)
+            owner->ApplyEnchantment(item, slot, false);
+
+        item->SetEnchantment(slot, gem->spellitemenchantement, 0, 0);
+
+        if (equipped)
+            owner->ApplyEnchantment(item, slot, true);
+
+        if (owner)
+            item->SendUpdateSockets();
+
+        YLA::Push(L, true);
+        return 1;
+    }
+
+    /**
+     * Applies a random property or suffix to the [Item].
+     *
+     * Positive IDs are random properties, negative IDs are random suffixes.
+     *
+     * @param int32 randomPropertyId : random property/suffix ID to apply
+     */
+    int SetRandomEnchant(lua_State* L, Item* item)
+    {
+        int32 randomPropertyId = YLA::CHECKVAL<int32>(L, 2);
+        Player* owner = item->GetOwner();
+        bool equipped = owner && item->IsEquipped() && owner->GetItemByPos(item->GetBagSlot(), item->GetSlot()) == item;
+
+        if (equipped)
+            owner->ApplyEnchantment(item, false);
+
+        item->SetItemRandomProperties(randomPropertyId);
+
+        if (equipped)
+            owner->ApplyEnchantment(item, true);
+
+        return 0;
+    }
 
     /**
      * Sets the random properties for the [Item] from a given random property ID.
