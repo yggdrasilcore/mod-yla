@@ -80,7 +80,6 @@ void YLAEventProcessor::Update(uint32 diff)
         bool deadTarget;
         YlaStateRef owner;
         uint64 sweep;
-        uint64 gen;
     };
 
     // Due events leave the containers here and are sole-owned by the
@@ -144,7 +143,7 @@ void YLAEventProcessor::Update(uint32 diff)
             // callback would run on the old state with a cross-map object.
             bool movedAway = liveObj && !luaEvent->owner.global && liveObj->IsInWorld() &&
                 (liveObj->GetMapId() != luaEvent->owner.mapId || liveObj->GetInstanceId() != luaEvent->owner.instanceId);
-            due.push_back(DueCall{ luaEvent, delay, repeatsArg, remove, liveObj, (guidCaptured && !objGuid.IsEmpty() && !liveObj) || movedAway, luaEvent->owner, massSweep.load(std::memory_order_acquire), luaEvent->gen });
+            due.push_back(DueCall{ luaEvent, delay, repeatsArg, remove, liveObj, (guidCaptured && !objGuid.IsEmpty() && !liveObj) || movedAway, luaEvent->owner, massSweep.load(std::memory_order_acquire) });
         }
     }
 
@@ -173,7 +172,7 @@ void YLAEventProcessor::Update(uint32 diff)
             YLA::Guard stateGuard(state->GetStateLock());
             if (state->HasLuaState())
             {
-                if (state->luaGen.load(std::memory_order_acquire) != call.gen)
+                if (state->luaGen.load(std::memory_order_acquire) != call.luaEvent->gen)
                 {
                     YLA_LOG_DEBUG("[YLA]: Dropped timed event (funcRef {} delay {}) after state reload.", call.luaEvent->funcRef, call.delay);
                     stale = true;
