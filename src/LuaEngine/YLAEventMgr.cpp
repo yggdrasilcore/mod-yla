@@ -165,10 +165,6 @@ void YLAEventProcessor::Update(uint32 diff)
         // null and are skipped: no raw slot is ever dereferenced. Locking
         // mirrors LOCK_YLA_STATE for the resolved state (global -> state
         // in compat, state-only in multistate).
-        // A reopened state is the same YlaStateRef and still HasLuaState(),
-        // but its registry no longer holds funcRef: firing it pushes nil
-        // where the function belongs and the caller leaves its arguments on
-        // the stack.
         bool ran = false;
         bool stale = false;
         if (auto state = YLA::LockStateRef(call.owner))
