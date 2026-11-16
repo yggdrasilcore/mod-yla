@@ -165,19 +165,28 @@ void YLAEventProcessor::Update(uint32 diff)
         // mirrors LOCK_YLA_STATE for the resolved state (global -> state
         // in compat, state-only in multistate).
         bool ran = false;
+        bool stale = false;
         if (auto state = YLA::LockStateRef(call.owner))
         {
             YLA::Guard globalGuard(YLAConfig::GetInstance().IsCompatibilityModeEnabled() ? YLA::GetLock() : YLA::GetNoopLock());
             YLA::Guard stateGuard(state->GetStateLock());
             if (state->HasLuaState())
-                ran = state->OnTimedEvent(call.luaEvent->funcRef, call.delay, call.repeatsArg, call.liveObj);
+            {
+                if (state->luaGen.load(std::memory_order_acquire) != call.luaEvent->gen)
+                {
+                    YLA_LOG_DEBUG("[YLA]: Dropped timed event (funcRef {} delay {}) after state reload.", call.luaEvent->funcRef, call.delay);
+                    stale = true;
+                }
+                else
+                    ran = state->OnTimedEvent(call.luaEvent->funcRef, call.delay, call.repeatsArg, call.liveObj);
+            }
         }
 
         {
             Guard guard(mutex);
             firing = nullptr;
         }
-        return ran;
+        return ran || stale;
     };
 
     // A refused call counts as not run: it is re-armed instead of dropped,
@@ -278,9 +287,9 @@ void YLAEventProcessor::AddEvent(LuaEvent* luaEvent)
     eventMap[luaEvent->funcRef] = luaEvent;
 }
 
-void YLAEventProcessor::AddEvent(int funcRef, uint32 min, uint32 max, uint32 repeats, const YlaStateRef& owner)
+void YLAEventProcessor::AddEvent(int funcRef, uint32 min, uint32 max, uint32 repeats, const YlaStateRef& owner, uint64 gen)
 {
-    AddEvent(new LuaEvent(funcRef, min, max, repeats, owner));
+    AddEvent(new LuaEvent(funcRef, min, max, repeats, owner, gen));
 }
 
 void YLAEventProcessor::RemoveEvent(LuaEvent* luaEvent)

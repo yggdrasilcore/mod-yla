@@ -829,7 +829,7 @@ namespace LuaWorldObject
         if (functionRef != LUA_REFNIL && functionRef != LUA_NOREF)
         {
             YLA* callingE = YLA::GetYLA(L);
-            obj->YLAEvents->AddEvent(functionRef, min, max, repeats, callingE->GetSelfRef());
+            obj->YLAEvents->AddEvent(functionRef, min, max, repeats, callingE->GetSelfRef(), callingE->luaGen.load(std::memory_order_acquire));
             YLA::Push(L, functionRef);
         }
         return 1;

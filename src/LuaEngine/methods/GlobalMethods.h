@@ -2036,7 +2036,7 @@ namespace LuaGlobalFunctions
         if (functionRef != LUA_REFNIL && functionRef != LUA_NOREF)
         {
             YLA* callingE = YLA::GetYLA(L);
-            callingE->eventMgr->globalProcessor->AddEvent(functionRef, min, max, repeats, callingE->GetSelfRef());
+            callingE->eventMgr->globalProcessor->AddEvent(functionRef, min, max, repeats, callingE->GetSelfRef(), callingE->luaGen.load(std::memory_order_acquire));
             YLA::Push(L, functionRef);
         }
         return 1;
