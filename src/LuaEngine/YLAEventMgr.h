@@ -45,8 +45,8 @@ enum LuaEventState
 
 struct LuaEvent
 {
-    LuaEvent(int _funcRef, uint32 _min, uint32 _max, uint32 _repeats, const YlaStateRef& _owner) :
-        min(_min), max(_max), delay(0), repeats(_repeats), funcRef(_funcRef), state(LUAEVENT_STATE_RUN), owner(_owner)
+    LuaEvent(int _funcRef, uint32 _min, uint32 _max, uint32 _repeats, const YlaStateRef& _owner, uint64 _gen) :
+        min(_min), max(_max), delay(0), repeats(_repeats), funcRef(_funcRef), state(LUAEVENT_STATE_RUN), owner(_owner), gen(_gen)
     {
     }
 
@@ -71,6 +71,11 @@ struct LuaEvent
     // YLA::LockStateRef at fire/unref time, so destroy/reload can never
     // leave a dangling reference behind, including for due-local events.
     YlaStateRef owner;
+    // Registry generation the funcRef was made against (CloseLua bumps
+    // it). A state that was closed and reopened is the same YlaStateRef and
+    // still HasLuaState(), but its registry no longer holds funcRef, so the
+    // event is dropped instead of firing a stale ref into the new registry.
+    uint64 gen;
 };
 
 class YLAEventProcessor
@@ -92,7 +97,7 @@ public:
     void SetStates(LuaEventState state);
     // set the event to be removed when executing
     void SetState(int eventId, LuaEventState state);
-    void AddEvent(int funcRef, uint32 min, uint32 max, uint32 repeats, const YlaStateRef& owner);
+    void AddEvent(int funcRef, uint32 min, uint32 max, uint32 repeats, const YlaStateRef& owner, uint64 gen);
     EventMap eventMap;
 
 private:
