@@ -468,6 +468,22 @@ void YLA::OnMapChanged(Player* player)
     CallAllFunctions(PlayerEventBindings, key);
 }
 
+void YLA::OnPlayerEnterTransport(Player* player, Transport* transport)
+{
+    START_HOOK_MAP(PLAYER_EVENT_ON_ENTER_TRANSPORT);
+    Push(player);
+    Push(transport);
+    CallAllFunctions(PlayerEventBindings, key);
+}
+
+void YLA::OnPlayerLeaveTransport(Player* player, Transport* transport)
+{
+    START_HOOK_MAP(PLAYER_EVENT_ON_LEAVE_TRANSPORT);
+    Push(player);
+    Push(transport);
+    CallAllFunctions(PlayerEventBindings, key);
+}
+
 // WORLD
 bool YLA::OnChat(Player* pPlayer, uint32 type, uint32 lang, std::string& msg)
 {

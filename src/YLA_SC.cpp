@@ -22,6 +22,7 @@
 #include "Log.h"
 #include "LuaEngine.h"
 #include "YLACreatureAI.h"
+#include "YLATransportEvents.h"
 #include "Pet.h"
 #include "Player.h"
 #include "Vehicle.h"
@@ -1293,6 +1294,54 @@ public:
     }
 };
 
+class YLA_TransportScript : public TransportScript
+{
+public:
+    YLA_TransportScript() : TransportScript("YLA_TransportScript") { }
+
+    // Every world starts with YLA enabled, so the transport is live as soon as this runs.
+    void OnTransportCreate(Transport* transport) override
+    {
+        YLA::GetMapStateOrGlobal(transport->GetMapId(), transport->GetInstanceId())->OnTransportCreate(transport);
+    }
+
+    void OnTransportDestroy(Transport* transport) override
+    {
+        YLA::GetMapStateOrGlobal(transport->GetMapId(), transport->GetInstanceId())->OnTransportDestroy(transport);
+    }
+
+    void OnAddPassenger(Transport* transport, Player* player) override
+    {
+        if (!player)
+            return;
+        YLABroadcastTransportPassengerAdded(transport, player);
+    }
+
+    void OnAddCreaturePassenger(Transport* transport, Creature* creature) override
+    {
+        if (!creature)
+            return;
+        YLABroadcastTransportCreaturePassengerAdded(transport, creature);
+    }
+
+    void OnRemovePassenger(Transport* transport, Player* player) override
+    {
+        if (!player)
+            return;
+        YLABroadcastTransportPassengerRemoved(transport, player);
+    }
+
+    void OnTransportUpdate(Transport* transport, uint32 diff) override
+    {
+        YLA::GetMapStateOrGlobal(transport->GetMapId(), transport->GetInstanceId())->OnTransportUpdate(transport, diff);
+    }
+
+    void OnRelocate(Transport* transport, uint32 waypointId, uint32 mapId, float x, float y, float z) override
+    {
+        YLA::GetMapStateOrGlobal(transport->GetMapId(), transport->GetInstanceId())->OnTransportRelocate(transport, waypointId, mapId, x, y, z);
+    }
+};
+
 class YLA_WorldObjectScript : public WorldObjectScript
 {
 public:
@@ -1571,6 +1620,7 @@ void AddSC_YLA()
     new YLA_SpellSC();
     new YLA_TicketScript();
     new YLA_VehicleScript();
+    new YLA_TransportScript();
     new YLA_WorldObjectScript();
     new YLA_WorldScript();
     new YLA_UnitScript();

@@ -795,6 +795,8 @@ namespace LuaGlobalFunctions
      * @values [67, PLAYER_EVENT_ON_PVP_FLAG_CHANGE, "MAP", <event: number, player: Player, state: boolean>, ""]
      * @values [68, PLAYER_EVENT_ON_DISPLAYID_CHANGE, "MAP", <event: number, player: Player, displayId: number>, ""]
      * @values [73, PLAYER_EVENT_ON_RELEASED_GHOST, "MAP", <event: number, player: Player>, ""]
+     * @values [74, PLAYER_EVENT_ON_ENTER_TRANSPORT, "MAP", <event: number, player: Player, transport: Transport>, ""]
+     * @values [75, PLAYER_EVENT_ON_LEAVE_TRANSPORT, "MAP", <event: number, player: Player, transport: Transport>, ""]
      *
      * @proto cancel = (event, function)
      * @proto cancel = (event, function, shots)
@@ -1256,6 +1258,37 @@ namespace LuaGlobalFunctions
     int RegisterItemGossipEvent(lua_State* L)
     {
         return RegisterEntryHelper(L, Hooks::REGTYPE_ITEM_GOSSIP);
+    }
+
+    /**
+     * Registers a [Transport] event handler.
+     *
+     * In Multistate mode (default), events are either registered to the WORLD state (-1) or the MAP states (map ID). These events will only ever trigger on their respective state.
+     *
+     * In Compatibility mode, all events are registered to the WORLD state (-1).
+     *
+     * @table
+     * @columns [ID, Event, State, Parameters, Comment]
+     * @values [1, TRANSPORT_EVENT_ON_CREATE, "WORLD", <event: number, transport: Transport>, "The transport has a map but is not in the world yet"]
+     * @values [2, TRANSPORT_EVENT_ON_DESTROY, "WORLD", <event: number, transport: Transport>, "Fired from the transport destructor; the handle is valid only during the call"]
+     * @values [3, TRANSPORT_EVENT_ON_UPDATE, "WORLD", <event: number, transport: Transport, diff: number>, ""]
+     * @values [4, TRANSPORT_EVENT_ON_RELOCATE, "WORLD", <event: number, transport: Transport, waypointId: number, mapId: number, x: number, y: number, z: number>, ""]
+     * @values [5, TRANSPORT_EVENT_ON_ADD_PASSENGER, "WORLD", <event: number, transport: Transport, passenger: WorldObject>, "Player, Creature or GameObject"]
+     * @values [6, TRANSPORT_EVENT_ON_REMOVE_PASSENGER, "WORLD", <event: number, transport: Transport, passenger: WorldObject>, "Player, Creature or GameObject"]
+     * @values [7, TRANSPORT_EVENT_ON_ADD_CREATURE_PASSENGER, "WORLD", <event: number, transport: Transport, creature: Creature>, ""]
+     *
+     * @proto cancel = (event, function)
+     * @proto cancel = (event, function, shots)
+     *
+     * @param uint32 event : [Transport] event Id, refer to table above
+     * @param function function : function to register
+     * @param uint32 shots = 0 : the number of times the function will be called, 0 means "always call this function"
+     *
+     * @return function cancel : a function that cancels the binding when called
+     */
+    int RegisterTransportEvent(lua_State* L)
+    {
+        return RegisterEventHelper(L, Hooks::REGTYPE_TRANSPORT);
     }
 
     /**
@@ -3415,6 +3448,33 @@ namespace LuaGlobalFunctions
         {
             uint32 event_type = YLA::CHECKVAL<uint32>(L, 1);
             YLA::GetYLA(L)->VehicleEventBindings->Clear(Key((Hooks::VehicleEvents)event_type));
+        }
+        return 0;
+    }
+
+    /**
+     * Unbinds event handlers for either all [Transport] events, or one type of [Transport] event.
+     *
+     * If `event_type` is `nil`, all [Transport] event handlers are cleared.
+     *
+     * Otherwise, only event handlers for `event_type` are cleared.
+     *
+     * @proto ()
+     * @proto (event_type)
+     * @param uint32 event_type : the event whose handlers will be cleared, see [Global:RegisterTransportEvent]
+     */
+    int ClearTransportEvents(lua_State* L)
+    {
+        typedef EventKey<Hooks::TransportEvents> Key;
+
+        if (lua_isnoneornil(L, 1))
+        {
+            YLA::GetYLA(L)->TransportEventBindings->Clear();
+        }
+        else
+        {
+            uint32 event_type = YLA::CHECKVAL<uint32>(L, 1);
+            YLA::GetYLA(L)->TransportEventBindings->Clear(Key((Hooks::TransportEvents)event_type));
         }
         return 0;
     }

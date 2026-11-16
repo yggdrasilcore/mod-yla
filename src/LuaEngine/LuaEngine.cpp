@@ -563,6 +563,7 @@ PlayerEventBindings(NULL),
 GuildEventBindings(NULL),
 GroupEventBindings(NULL),
 VehicleEventBindings(NULL),
+TransportEventBindings(NULL),
 BGEventBindings(NULL),
 BattlefieldEventBindings(NULL),
 AllCreatureEventBindings(NULL),
@@ -674,6 +675,7 @@ void YLA::CreateBindStores()
     GuildEventBindings       = new BindingMap< EventKey<Hooks::GuildEvents> >(L);
     GroupEventBindings       = new BindingMap< EventKey<Hooks::GroupEvents> >(L);
     VehicleEventBindings     = new BindingMap< EventKey<Hooks::VehicleEvents> >(L);
+    TransportEventBindings   = new BindingMap< EventKey<Hooks::TransportEvents> >(L);
     UnitEventBindings        = new BindingMap< EventKey<Hooks::UnitEvents> >(L);
     BGEventBindings          = new BindingMap< EventKey<Hooks::BGEvents> >(L);
     BattlefieldEventBindings = new BindingMap< EventKey<Hooks::BattlefieldEvents> >(L);
@@ -704,6 +706,7 @@ void YLA::DestroyBindStores()
     delete GuildEventBindings;
     delete GroupEventBindings;
     delete VehicleEventBindings;
+    delete TransportEventBindings;
     delete UnitEventBindings;
     delete AllCreatureEventBindings;
 
@@ -731,6 +734,7 @@ void YLA::DestroyBindStores()
     GuildEventBindings = NULL;
     GroupEventBindings = NULL;
     VehicleEventBindings = NULL;
+    TransportEventBindings = NULL;
     UnitEventBindings = NULL;
     AllCreatureEventBindings = NULL;
 
@@ -1747,6 +1751,16 @@ int YLA::Register(lua_State* L, uint8 regtype, uint32 entry, ObjectGuid guid, ui
                 auto key = EventKey<Hooks::VehicleEvents>((Hooks::VehicleEvents)event_id);
                 bindingID = VehicleEventBindings->Insert(key, functionRef, shots);
                 createCancelCallback(L, bindingID, VehicleEventBindings);
+                return 1; // Stack: callback
+            }
+            break;
+
+        case Hooks::REGTYPE_TRANSPORT:
+            if (event_id < Hooks::TRANSPORT_EVENT_COUNT)
+            {
+                auto key = EventKey<Hooks::TransportEvents>((Hooks::TransportEvents)event_id);
+                bindingID = TransportEventBindings->Insert(key, functionRef, shots);
+                createCancelCallback(L, bindingID, TransportEventBindings);
                 return 1; // Stack: callback
             }
             break;
