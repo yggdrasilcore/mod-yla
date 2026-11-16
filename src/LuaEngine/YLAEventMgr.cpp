@@ -165,11 +165,10 @@ void YLAEventProcessor::Update(uint32 diff)
         // null and are skipped: no raw slot is ever dereferenced. Locking
         // mirrors LOCK_YLA_STATE for the resolved state (global -> state
         // in compat, state-only in multistate).
-        // A state whose registry was closed and reopened resolves fine and
-        // still HasLuaState(), but funcRef then refers to a slot of the
-        // reclaiming lua_close, not this event: firing it pushes nil where
-        // the function belongs and the caller bails out with its arguments
-        // still on the stack, corrupting every later call on that state.
+        // A reopened state is the same YlaStateRef and still HasLuaState(),
+        // but its registry no longer holds funcRef: firing it pushes nil
+        // where the function belongs and the caller leaves its arguments on
+        // the stack.
         bool ran = false;
         bool stale = false;
         if (auto state = YLA::LockStateRef(call.owner))
@@ -180,9 +179,7 @@ void YLAEventProcessor::Update(uint32 diff)
             {
                 if (state->luaGen.load(std::memory_order_acquire) != call.gen)
                 {
-                    // Reloaded under us: the event is dead. Count it as
-                    // handled so rearmOrDrop drops it instead of re-arming
-                    // a stale ref.
+                    // Count as handled so rearmOrDrop drops the dead ref.
                     YLA_LOG_DEBUG("[YLA]: Dropped timed event (funcRef {} delay {}) after state reload.", call.luaEvent->funcRef, call.delay);
                     stale = true;
                 }

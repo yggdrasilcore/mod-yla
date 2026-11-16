@@ -71,10 +71,7 @@ struct LuaEvent
     // YLA::LockStateRef at fire/unref time, so destroy/reload can never
     // leave a dangling reference behind, including for due-local events.
     YlaStateRef owner;
-    // Registry generation the funcRef was made against (CloseLua bumps
-    // it). A state that was closed and reopened is the same YlaStateRef and
-    // still HasLuaState(), but its registry no longer holds funcRef, so the
-    // event is dropped instead of firing a stale ref into the new registry.
+    // Registry generation the funcRef was made against (CloseLua bumps it).
     uint64 gen;
 };
 
