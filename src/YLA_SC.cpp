@@ -69,7 +69,8 @@ public:
         E->OnAllCreatureAddToWorld(creature);
 
         if (creature->IsGuardian() && creature->ToTempSummon() && creature->ToTempSummon()->GetSummonerGUID().IsPlayer())
-            E->OnPetAddedToWorld(creature->ToTempSummon()->GetSummonerUnit()->ToPlayer(), creature);
+            if (Player* summoner = creature->ToTempSummon()->GetSummonerUnit() ? creature->ToTempSummon()->GetSummonerUnit()->ToPlayer() : nullptr)
+                E->OnPetAddedToWorld(summoner, creature);
     }
 
     void OnCreatureRemoveWorld(Creature* creature) override
@@ -618,6 +619,8 @@ public:
 
     void OnCreate(Group* group, Player* leader) override
     {
+        if (!leader)
+            return;
         gYLA->OnCreate(group, leader->GetGUID(), group->GetGroupType());
     }
 };
@@ -735,6 +738,8 @@ public:
 
     void OnPetAddToWorld(Pet* pet) override
     {
+        if (!pet || !pet->GetOwner())
+            return;
         YLA::GetMapStateOrGlobal(pet->GetMapId(), pet->GetInstanceId())->OnPetAddedToWorld(pet->GetOwner(), pet);
     }
 };
@@ -1149,6 +1154,8 @@ public:
     // MAP
     void OnPlayerCreatureKilledByPet(Player* player, Creature* killed) override
     {
+        if (!player)
+            return;
         YLA::GetMapStateOrGlobal(player->GetMapId(), player->GetInstanceId())->OnCreatureKilledByPet(player, killed);
     }
 
