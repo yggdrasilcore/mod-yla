@@ -619,8 +619,7 @@ public:
 
     void OnCreate(Group* group, Player* leader) override
     {
-        // The core fires this deferred through GroupSocialLock and only resolves the leader
-        // with FindConnectedPlayer, so the leader can be offline by the time we get here.
+        // Deferred through GroupSocialLock with FindConnectedPlayer: the leader may be offline.
         if (!leader)
             return;
         gYLA->OnCreate(group, leader->GetGUID(), group->GetGroupType());
@@ -740,8 +739,7 @@ public:
 
     void OnPetAddToWorld(Pet* pet) override
     {
-        // Pet::AddToWorld only fires this for player-owned pets, so the owner can stay offline
-        // or already be gone from the accessor by the time we map it to a pointer here.
+        // Only fired for player-owned pets, but the owner may be offline or gone.
         if (!pet || !pet->GetOwner())
             return;
         YLA::GetMapStateOrGlobal(pet->GetMapId(), pet->GetInstanceId())->OnPetAddedToWorld(pet->GetOwner(), pet);
@@ -1158,9 +1156,7 @@ public:
     // MAP
     void OnPlayerCreatureKilledByPet(Player* player, Creature* killed) override
     {
-        // The killer is any pet or totem the core sees fit to report. Its charmer/owner is not
-        // guaranteed to be a player: creature-summoned totems and minions have owners, but no
-        // player anywhere in the chain, so the core hands us null here.
+        // Creature-owned totems and minions are reported here too, with no player in the chain.
         if (!player)
             return;
         YLA::GetMapStateOrGlobal(player->GetMapId(), player->GetInstanceId())->OnCreatureKilledByPet(player, killed);
