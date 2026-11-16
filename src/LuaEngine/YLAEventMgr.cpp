@@ -175,7 +175,6 @@ void YLAEventProcessor::Update(uint32 diff)
             {
                 if (state->luaGen.load(std::memory_order_acquire) != call.gen)
                 {
-                    // Count as handled so rearmOrDrop drops the dead ref.
                     YLA_LOG_DEBUG("[YLA]: Dropped timed event (funcRef {} delay {}) after state reload.", call.luaEvent->funcRef, call.delay);
                     stale = true;
                 }
