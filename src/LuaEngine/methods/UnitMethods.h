@@ -412,7 +412,7 @@ namespace LuaUnit
      */
     int IsOnVehicle(lua_State* L, Unit* unit)
     {
-        YLA::Push(L, unit->GetVehicle());
+        YLA::Push(L, unit->GetVehicle() != nullptr);
         return 1;
     }
 
@@ -1177,11 +1177,16 @@ namespace LuaUnit
         return 1;
     }
 
-    /*int GetVehicle(lua_State* L, Unit* unit)
+    /**
+     * Returns the [Vehicle] the [Unit] is on, or nil.
+     *
+     * @return [Vehicle] vehicle
+     */
+    int GetVehicle(lua_State* L, Unit* unit)
     {
-    YLA::Push(L, unit->GetVehicle());
-    return 1;
-    }*/
+        YLA::Push(L, unit->GetVehicle());
+        return 1;
+    }
 
     /**
      * Returns the Critter Guid
