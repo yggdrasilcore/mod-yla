@@ -672,6 +672,230 @@ namespace LuaShadow
         return 1;
 #endif
     }
+
+    /**
+     * Sets the combat target of the [Shadow] bot directly, bypassing any
+     * active targeting suppression. Passing nil clears the target.
+     *
+     * @param [Unit] target = nil : unit to target
+     * @return bool applied
+     */
+    inline int SetTarget(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        Unit* target = YLA::CHECKOBJ<Unit>(L, 2, false);
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            ai->SetTarget(target);
+            YLA::Push(L, true);
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
+
+    /**
+     * Replaces the prioritized targets of the [Shadow] bot with the units in
+     * the supplied array. Entries that are not valid units are skipped.
+     *
+     * @param table targets : array of [Unit]
+     * @return bool applied
+     */
+    inline int SetPrioritizedTargets(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        if (!lua_istable(L, 2))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            GuidVector targets;
+            size_t count = lua_rawlen(L, 2);
+            targets.reserve(count);
+            for (size_t i = 1; i <= count; ++i)
+            {
+                lua_rawgeti(L, 2, static_cast<int>(i));
+                if (Unit* target = YLA::CHECKOBJ<Unit>(L, lua_gettop(L), false))
+                    targets.push_back(target->GetGUID());
+                lua_pop(L, 1);
+            }
+            ai->SetPrioritizedTargets(targets);
+            YLA::Push(L, true);
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
+
+    /**
+     * Sets the pull target of the [Shadow] bot. Passing nil clears it.
+     *
+     * @param [Unit] target = nil : unit to pull
+     * @return bool applied
+     */
+    inline int SetPullTarget(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        Unit* target = YLA::CHECKOBJ<Unit>(L, 2, false);
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            ai->SetPullTarget(target ? target->GetGUID() : ObjectGuid::Empty);
+            YLA::Push(L, true);
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
+
+    /**
+     * Clears the current combat target of the [Shadow] bot directly, bypassing
+     * any active targeting suppression.
+     *
+     * @return bool applied
+     */
+    inline int ClearTarget(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            ai->ClearTarget();
+            YLA::Push(L, true);
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
+
+    /**
+     * Suppresses all mod-shadows target changes for the given duration so Lua
+     * can drive the bot's targeting. While active, the AI ignores its own
+     * changes to the current, prioritized and pull targets, and refuses to
+     * acquire new targets. Passing 0 clears the suppression immediately.
+     *
+     * @param uint32 durationMs : duration in milliseconds (0 = clear)
+     * @return bool applied
+     */
+    inline int SuppressTargeting(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        uint32 durationMs = YLA::CHECKVAL<uint32>(L, 2);
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            ai->SuppressTargeting(durationMs);
+            YLA::Push(L, true);
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
+
+    /**
+     * Clears any active targeting suppression for the [Shadow] immediately.
+     *
+     * @return bool cleared
+     */
+    inline int ClearTargetingSuppression(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            ai->ClearTargetingSuppression();
+            YLA::Push(L, true);
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
+
+    /**
+     * Returns `true` while mod-shadows target changes are suppressed for the
+     * [Shadow], `false` otherwise.
+     *
+     * @return bool suppressed
+     */
+    inline int IsTargetingSuppressed(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, false);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            YLA::Push(L, ai->IsTargetingSuppressed());
+            return 1;
+        }
+        YLA::Push(L, false);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, false);
+        return 1;
+#endif
+    }
 }
 
 /***
