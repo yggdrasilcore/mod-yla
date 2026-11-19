@@ -385,7 +385,7 @@ YLARegister<Unit> UnitMethods[] =
     { "GetStat", &LuaUnit::GetStat },
     { "GetBaseSpellPower", &LuaUnit::GetBaseSpellPower },
     { "GetVehicleKit", &LuaUnit::GetVehicleKit },
-    // {"GetVehicle", &LuaUnit::GetVehicle},                           // :GetVehicle() - UNDOCUMENTED - Gets the Vehicle kit of the vehicle the unit is on
+    { "GetVehicle", &LuaUnit::GetVehicle },
     { "GetMovementType", &LuaUnit::GetMovementType },
     { "GetAttackers", &LuaUnit::GetAttackers },
     { "GetThreat", &LuaUnit::GetThreat },
