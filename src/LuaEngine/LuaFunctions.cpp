@@ -82,6 +82,7 @@ YLAGlobalRegister GlobalMethods[] =
     { "RegisterSpellEvent", &LuaGlobalFunctions::RegisterSpellEvent },
     { "RegisterAuraEvent", &LuaGlobalFunctions::RegisterAuraEvent },
     { "RegisterAllCreatureEvent", &LuaGlobalFunctions::RegisterAllCreatureEvent },
+    { "RegisterTransportEvent", &LuaGlobalFunctions::RegisterTransportEvent },
 
 
     { "ClearBattleGroundEvents", &LuaGlobalFunctions::ClearBattleGroundEvents },
@@ -108,6 +109,7 @@ YLAGlobalRegister GlobalMethods[] =
     { "ClearSpellEvents", &LuaGlobalFunctions::ClearSpellEvents },
     { "ClearAuraEvents", &LuaGlobalFunctions::ClearAuraEvents },
     { "ClearAllCreatureEvents", &LuaGlobalFunctions::ClearAllCreatureEvents },
+    { "ClearTransportEvents", &LuaGlobalFunctions::ClearTransportEvents },
 
     // Getters
     { "GetLuaEngine", &LuaGlobalFunctions::GetLuaEngine },

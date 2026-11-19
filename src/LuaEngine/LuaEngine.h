@@ -333,6 +333,7 @@ public:
     BindingMap< EventKey<Hooks::BGEvents> >*            BGEventBindings;
     BindingMap< EventKey<Hooks::BattlefieldEvents> >*   BattlefieldEventBindings;
     BindingMap< EventKey<Hooks::AllCreatureEvents> >*   AllCreatureEventBindings;
+    BindingMap< EventKey<Hooks::TransportEvents> >*     TransportEventBindings;
 
     BindingMap< EntryKey<Hooks::PacketEvents> >*        PacketEventBindings;
     BindingMap< EntryKey<Hooks::CreatureEvents> >*      CreatureEventBindings;
@@ -595,6 +596,8 @@ public:
     void OnUpdateArea(Player* pPlayer, uint32 oldArea, uint32 newArea);
     void OnUpdateZone(Player* pPlayer, uint32 newZone, uint32 newArea);
     void OnMapChanged(Player* pPlayer);
+    void OnPlayerEnterTransport(Player* pPlayer, Transport* transport);
+    void OnPlayerLeaveTransport(Player* pPlayer, Transport* transport);
     void HandleGossipSelectOption(Player* pPlayer, uint32 menuId, uint32 sender, uint32 action, const std::string& code);
     void OnLearnSpell(Player* player, uint32 spellId);
     void OnAchiComplete(Player* player, AchievementEntry const* achievement);
@@ -624,6 +627,15 @@ public:
     void OnInstallAccessory(Vehicle* vehicle, Creature* accessory);
     void OnAddPassenger(Vehicle* vehicle, Unit* passenger, int8 seatId);
     void OnRemovePassenger(Vehicle* vehicle, Unit* passenger);
+
+    /* Transport */
+    void OnTransportCreate(Transport* transport);
+    void OnTransportDestroy(Transport* transport);
+    void OnTransportUpdate(Transport* transport, uint32 diff);
+    void OnTransportRelocate(Transport* transport, uint32 waypointId, uint32 mapId, float x, float y, float z);
+    void OnTransportAddPassenger(Transport* transport, WorldObject* passenger);
+    void OnTransportRemovePassenger(Transport* transport, WorldObject* passenger);
+    void OnTransportAddCreaturePassenger(Transport* transport, Creature* creature);
 
     /* Unit */
     void OnUnitDisplayIdChange(Unit* unit, uint32 displayId);

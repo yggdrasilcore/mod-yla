@@ -93,6 +93,7 @@ namespace Hooks
         REGTYPE_AURA,
         REGTYPE_UNIT,
         REGTYPE_AREATRIGGER,
+        REGTYPE_TRANSPORT,
         REGTYPE_COUNT
     };
 
@@ -245,6 +246,8 @@ namespace Hooks
         PLAYER_EVENT_ON_PVP_FLAG_CHANGE             =     67,       // (event, player, state)
         PLAYER_EVENT_ON_DISPLAYID_CHANGE            =     68,       // (event, player, displayId)
         PLAYER_EVENT_ON_RELEASED_GHOST              =     73,       // (event, player)
+        PLAYER_EVENT_ON_ENTER_TRANSPORT             =     74,       // (event, player, transport)
+        PLAYER_EVENT_ON_LEAVE_TRANSPORT             =     75,       // (event, player, transport)
 
         PLAYER_EVENT_COUNT
     };
@@ -290,6 +293,19 @@ namespace Hooks
         VEHICLE_EVENT_ON_REMOVE_PASSENGER       =     6,    // (event, vehicle, unit)
 
         VEHICLE_EVENT_COUNT
+    };
+
+    enum TransportEvents
+    {
+        TRANSPORT_EVENT_ON_CREATE                       = 1, // (event, transport)
+        TRANSPORT_EVENT_ON_DESTROY                      = 2, // (event, transport)
+        TRANSPORT_EVENT_ON_UPDATE                       = 3, // (event, transport, diff)
+        TRANSPORT_EVENT_ON_RELOCATE                     = 4, // (event, transport, waypointId, mapId, x, y, z)
+        TRANSPORT_EVENT_ON_ADD_PASSENGER                = 5, // (event, transport, passenger)
+        TRANSPORT_EVENT_ON_REMOVE_PASSENGER             = 6, // (event, transport, passenger)
+        TRANSPORT_EVENT_ON_ADD_CREATURE_PASSENGER       = 7, // (event, transport, creature)
+
+        TRANSPORT_EVENT_COUNT
     };
 
     enum CreatureEvents
