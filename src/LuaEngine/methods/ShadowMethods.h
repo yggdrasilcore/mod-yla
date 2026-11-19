@@ -809,6 +809,94 @@ namespace LuaShadow
     }
 
     /**
+     * Returns the current combat target of the [Shadow] bot, or nil when it
+     * has none (or mod-shadows is unavailable).
+     *
+     * @return [Unit] target
+     */
+    inline int GetTarget(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, (Unit*)nullptr);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            YLA::Push(L, ai->GetTarget());
+            return 1;
+        }
+        YLA::Push(L, (Unit*)nullptr);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, (Unit*)nullptr);
+        return 1;
+#endif
+    }
+
+    /**
+     * Returns a table of the prioritized targets of the [Shadow] bot.
+     *
+     * @return table targets
+     */
+    inline int GetPrioritizedTargets(lua_State* L, ShadowPlayer* shadow)
+    {
+        lua_createtable(L, 0, 0);
+        int tbl = lua_gettop(L);
+#ifdef MOD_SHADOWS
+        if (shadow && ShadowPlayer::IsLive(shadow))
+        {
+            if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+            {
+                uint32 i = 0;
+                for (ObjectGuid const& guid : ai->GetPrioritizedTargets())
+                {
+                    Unit* target = ai->GetUnit(guid);
+                    if (!target)
+                        continue;
+                    YLA::Push(L, target);
+                    lua_rawseti(L, tbl, ++i);
+                }
+            }
+        }
+#else
+        (void)shadow;
+#endif
+        lua_settop(L, tbl);
+        return 1;
+    }
+
+    /**
+     * Returns the pull target of the [Shadow] bot, or nil when it has none
+     * (or mod-shadows is unavailable).
+     *
+     * @return [Unit] target
+     */
+    inline int GetPullTarget(lua_State* L, ShadowPlayer* shadow)
+    {
+#ifdef MOD_SHADOWS
+        if (!shadow || !ShadowPlayer::IsLive(shadow))
+        {
+            YLA::Push(L, (Unit*)nullptr);
+            return 1;
+        }
+        if (auto ai = sShadowsMgr->GetShadowAI(ShadowPlayer::ToPlayer(shadow)))
+        {
+            YLA::Push(L, ai->GetUnit(ai->GetPullTarget()));
+            return 1;
+        }
+        YLA::Push(L, (Unit*)nullptr);
+        return 1;
+#else
+        (void)shadow;
+        YLA::Push(L, (Unit*)nullptr);
+        return 1;
+#endif
+    }
+
+    /**
      * Suppresses all mod-shadows target changes for the given duration so Lua
      * can drive the bot's targeting. While active, the AI ignores its own
      * changes to the current, prioritized and pull targets, and refuses to
