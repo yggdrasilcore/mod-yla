@@ -951,6 +951,16 @@ YLARegister<ShadowPlayer> ShadowMethods[] =
     { "SuppressMovement", &LuaShadow::SuppressMovement },
     { "ClearMovementSuppression", &LuaShadow::ClearMovementSuppression },
     { "IsMovementSuppressed", &LuaShadow::IsMovementSuppressed },
+    { "SetTarget", &LuaShadow::SetTarget },
+    { "SetPrioritizedTargets", &LuaShadow::SetPrioritizedTargets },
+    { "SetPullTarget", &LuaShadow::SetPullTarget },
+    { "ClearTarget", &LuaShadow::ClearTarget },
+    { "GetTarget", &LuaShadow::GetTarget },
+    { "GetPrioritizedTargets", &LuaShadow::GetPrioritizedTargets },
+    { "GetPullTarget", &LuaShadow::GetPullTarget },
+    { "SuppressTargeting", &LuaShadow::SuppressTargeting },
+    { "ClearTargetingSuppression", &LuaShadow::ClearTargetingSuppression },
+    { "IsTargetingSuppressed", &LuaShadow::IsTargetingSuppressed },
 
     { NULL, NULL }
 };
