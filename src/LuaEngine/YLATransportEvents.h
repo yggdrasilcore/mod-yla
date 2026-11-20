@@ -9,11 +9,9 @@
 
 class Transport;
 class WorldObject;
-class Creature;
 
 // Called by YLA_TransportScript in YLA_SC.cpp when the core reports transport activity.
 void YLABroadcastTransportPassengerAdded(Transport* transport, WorldObject* passenger);
-void YLABroadcastTransportCreaturePassengerAdded(Transport* transport, Creature* creature);
 void YLABroadcastTransportPassengerRemoved(Transport* transport, WorldObject* passenger);
 
 #endif

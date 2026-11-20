@@ -8,6 +8,8 @@
 #include "HookHelpers.h"
 #include "LuaEngine.h"
 #include "BindingMap.h"
+#include "Transport.h"
+#include "Map.h"
 #include "YLATemplate.h"
 
 using namespace Hooks;
@@ -26,6 +28,22 @@ void YLA::OnTransportCreate(Transport* transport)
 {
     START_HOOK(TRANSPORT_EVENT_ON_CREATE);
     Push(transport);
+    CallAllFunctions(TransportEventBindings, key);
+}
+
+void YLA::OnTransportEnterMap(Transport* transport, Map* map)
+{
+    START_HOOK(TRANSPORT_EVENT_ON_ENTER_MAP);
+    Push(transport);
+    Push(map);
+    CallAllFunctions(TransportEventBindings, key);
+}
+
+void YLA::OnTransportLeaveMap(Transport* transport, Map* map)
+{
+    START_HOOK(TRANSPORT_EVENT_ON_LEAVE_MAP);
+    Push(transport);
+    Push(map);
     CallAllFunctions(TransportEventBindings, key);
 }
 
@@ -69,13 +87,5 @@ void YLA::OnTransportRemovePassenger(Transport* transport, WorldObject* passenge
     START_HOOK(TRANSPORT_EVENT_ON_REMOVE_PASSENGER);
     Push(transport);
     Push(passenger);
-    CallAllFunctions(TransportEventBindings, key);
-}
-
-void YLA::OnTransportAddCreaturePassenger(Transport* transport, Creature* creature)
-{
-    START_HOOK(TRANSPORT_EVENT_ON_ADD_CREATURE_PASSENGER);
-    Push(transport);
-    Push(creature);
     CallAllFunctions(TransportEventBindings, key);
 }

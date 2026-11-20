@@ -5,7 +5,6 @@
  */
 
 #include "YLATransportEvents.h"
-#include "Creature.h"
 #include "LuaEngine.h"
 #include "Player.h"
 #include "Transport.h"
@@ -16,12 +15,6 @@ void YLABroadcastTransportPassengerAdded(Transport* transport, WorldObject* pass
 
     if (Player* player = passenger->ToPlayer())
         YLA::GetMapStateOrGlobal(player->GetMapId(), player->GetInstanceId())->OnPlayerEnterTransport(player, transport);
-}
-
-void YLABroadcastTransportCreaturePassengerAdded(Transport* transport, Creature* creature)
-{
-    YLA::GetMapStateOrGlobal(transport->GetMapId(), transport->GetInstanceId())->OnTransportAddCreaturePassenger(transport, creature);
-    YLABroadcastTransportPassengerAdded(transport, creature);
 }
 
 void YLABroadcastTransportPassengerRemoved(Transport* transport, WorldObject* passenger)

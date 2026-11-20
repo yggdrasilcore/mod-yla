@@ -23,8 +23,10 @@
 #include "LuaEngine.h"
 #include "YLACreatureAI.h"
 #include "YLATransportEvents.h"
+#include "Map.h"
 #include "Pet.h"
 #include "Player.h"
+#include "Transport.h"
 #include "Vehicle.h"
 #include "ScriptMgr.h"
 #include "ScriptedGossip.h"
@@ -1299,10 +1301,25 @@ class YLA_TransportScript : public TransportScript
 public:
     YLA_TransportScript() : TransportScript("YLA_TransportScript") { }
 
+    // The script is not bound to a transport through a database ScriptName; it observes
+    // every transport. Without this, the core defers it to AddALScripts and drops it,
+    // because no `script_names` row exists for this name.
+    [[nodiscard]] bool IsDatabaseBound() const override { return false; }
+
     // Every world starts with YLA enabled, so the transport is live as soon as this runs.
     void OnTransportCreate(Transport* transport) override
     {
         YLA::GetMapStateOrGlobal(transport->GetMapId(), transport->GetInstanceId())->OnTransportCreate(transport);
+    }
+
+    void OnTransportEnterMap(Transport* transport, Map* map) override
+    {
+        YLA::GetMapStateOrGlobal(map->GetId(), map->GetInstanceId())->OnTransportEnterMap(transport, map);
+    }
+
+    void OnTransportLeaveMap(Transport* transport, Map* map) override
+    {
+        YLA::GetMapStateOrGlobal(map->GetId(), map->GetInstanceId())->OnTransportLeaveMap(transport, map);
     }
 
     void OnTransportDestroy(Transport* transport) override
@@ -1310,25 +1327,18 @@ public:
         YLA::GetMapStateOrGlobal(transport->GetMapId(), transport->GetInstanceId())->OnTransportDestroy(transport);
     }
 
-    void OnAddPassenger(Transport* transport, Player* player) override
+    void OnAddPassenger(Transport* transport, WorldObject* passenger) override
     {
-        if (!player)
+        if (!passenger)
             return;
-        YLABroadcastTransportPassengerAdded(transport, player);
+        YLABroadcastTransportPassengerAdded(transport, passenger);
     }
 
-    void OnAddCreaturePassenger(Transport* transport, Creature* creature) override
+    void OnRemovePassenger(Transport* transport, WorldObject* passenger) override
     {
-        if (!creature)
+        if (!passenger)
             return;
-        YLABroadcastTransportCreaturePassengerAdded(transport, creature);
-    }
-
-    void OnRemovePassenger(Transport* transport, Player* player) override
-    {
-        if (!player)
-            return;
-        YLABroadcastTransportPassengerRemoved(transport, player);
+        YLABroadcastTransportPassengerRemoved(transport, passenger);
     }
 
     void OnTransportUpdate(Transport* transport, uint32 diff) override

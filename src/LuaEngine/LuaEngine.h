@@ -630,12 +630,13 @@ public:
 
     /* Transport */
     void OnTransportCreate(Transport* transport);
+    void OnTransportEnterMap(Transport* transport, Map* map);
+    void OnTransportLeaveMap(Transport* transport, Map* map);
     void OnTransportDestroy(Transport* transport);
     void OnTransportUpdate(Transport* transport, uint32 diff);
     void OnTransportRelocate(Transport* transport, uint32 waypointId, uint32 mapId, float x, float y, float z);
     void OnTransportAddPassenger(Transport* transport, WorldObject* passenger);
     void OnTransportRemovePassenger(Transport* transport, WorldObject* passenger);
-    void OnTransportAddCreaturePassenger(Transport* transport, Creature* creature);
 
     /* Unit */
     void OnUnitDisplayIdChange(Unit* unit, uint32 displayId);
