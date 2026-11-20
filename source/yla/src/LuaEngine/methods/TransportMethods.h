@@ -17,19 +17,29 @@
 namespace LuaTransport
 {
     /**
-     * Returns a table of all passengers on the [Transport]
+     * Returns a table of all passengers on the [Transport], including the static
+     * creatures and gameobjects loaded with the transport's grid
      *
      * @return table passengers
      */
     int GetPassengers(lua_State* L, Transport* transport)
     {
-        Transport::PassengerGuidSet const passengers = transport->GetPassengerGuids();
+        Transport::PassengerGuidSet passengers = transport->GetPassengerGuids();
+
+        MotionTransport* motionTransport = dynamic_cast<MotionTransport*>(transport);
+        if (motionTransport)
+        {
+            Transport::PassengerGuidSet const staticPassengers = motionTransport->GetStaticPassengerGuids();
+            passengers.insert(staticPassengers.begin(), staticPassengers.end());
+        }
+
         lua_newtable(L);
         int i = 1;
         for (ObjectGuid const& guid : passengers)
         {
             WorldObject* passenger = transport->GetPassenger(guid);
-            if (!passenger || !transport->HasPassenger(guid))
+            bool const listed = transport->HasPassenger(guid) || (motionTransport && motionTransport->HasStaticPassenger(guid));
+            if (!passenger || !listed)
                 continue;
             YLA::Push(L, passenger);
             lua_rawseti(L, -2, i++);
