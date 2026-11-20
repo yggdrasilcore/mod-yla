@@ -301,8 +301,8 @@ namespace Hooks
         TRANSPORT_EVENT_ON_DESTROY                      = 2, // (event, transport)
         TRANSPORT_EVENT_ON_UPDATE                       = 3, // (event, transport, diff)
         TRANSPORT_EVENT_ON_RELOCATE                     = 4, // (event, transport, waypointId, mapId, x, y, z)
-        TRANSPORT_EVENT_ON_ADD_PASSENGER                = 5, // (event, transport, passenger)
-        TRANSPORT_EVENT_ON_REMOVE_PASSENGER             = 6, // (event, transport, passenger)
+        TRANSPORT_EVENT_ON_ADD_PASSENGER                = 5, // (event, transport, passenger: WorldObject)
+        TRANSPORT_EVENT_ON_REMOVE_PASSENGER             = 6, // (event, transport, passenger: WorldObject)
 
         TRANSPORT_EVENT_COUNT
     };

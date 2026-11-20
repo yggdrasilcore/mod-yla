@@ -1269,12 +1269,12 @@ namespace LuaGlobalFunctions
      *
      * @table
      * @columns [ID, Event, State, Parameters, Comment]
-     * @values [1, TRANSPORT_EVENT_ON_CREATE, "WORLD", <event: number, transport: Transport>, "The transport has been added to its map"]
+     * @values [1, TRANSPORT_EVENT_ON_CREATE, "WORLD", <event: number, transport: Transport>, "Announced once per transport, including when a motion transport is moved to another map"]
      * @values [2, TRANSPORT_EVENT_ON_DESTROY, "WORLD", <event: number, transport: Transport>, "Fired from the transport destructor; the handle is valid only during the call"]
      * @values [3, TRANSPORT_EVENT_ON_UPDATE, "WORLD", <event: number, transport: Transport, diff: number>, ""]
-     * @values [4, TRANSPORT_EVENT_ON_RELOCATE, "WORLD", <event: number, transport: Transport, waypointId: number, mapId: number, x: number, y: number, z: number>, ""]
-     * @values [5, TRANSPORT_EVENT_ON_ADD_PASSENGER, "WORLD", <event: number, transport: Transport, passenger: WorldObject>, "Player, Creature or GameObject"]
-     * @values [6, TRANSPORT_EVENT_ON_REMOVE_PASSENGER, "WORLD", <event: number, transport: Transport, passenger: WorldObject>, "Player, Creature or GameObject"]
+     * @values [4, TRANSPORT_EVENT_ON_RELOCATE, "WORLD", <event: number, transport: Transport, waypointId: number, mapId: number, x: number, y: number, z: number>, "Per waypoint, not per position update"]
+     * @values [5, TRANSPORT_EVENT_ON_ADD_PASSENGER, "WORLD", <event: number, transport: Transport, passenger: WorldObject>, "Player, Creature or GameObject; static passengers are reported when the transport's grid loads them"]
+     * @values [6, TRANSPORT_EVENT_ON_REMOVE_PASSENGER, "WORLD", <event: number, transport: Transport, passenger: WorldObject>, "Player, Creature or GameObject; static passengers are reported when they unload with the grid"]
      *
      * @proto cancel = (event, function)
      * @proto cancel = (event, function, shots)
@@ -1287,6 +1287,11 @@ namespace LuaGlobalFunctions
      */
     int RegisterTransportEvent(lua_State* L)
     {
+        // Every passenger, including creatures and gameobjects, is reported by the
+        // generic passenger events; the creature-only ids 7 and 8 were removed.
+        uint32 event = YLA::CHECKVAL<uint32>(L, 1);
+        if (event < 1 || event >= Hooks::TRANSPORT_EVENT_COUNT)
+            return luaL_error(L, "unknown transport event %u (valid: 1-%u)", event, uint32(Hooks::TRANSPORT_EVENT_COUNT) - 1);
         return RegisterEventHelper(L, Hooks::REGTYPE_TRANSPORT);
     }
 
