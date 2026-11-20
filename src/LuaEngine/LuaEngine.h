@@ -630,6 +630,8 @@ public:
 
     /* Transport */
     void OnTransportCreate(Transport* transport);
+    void OnTransportEnterMap(Transport* transport, Map* map);
+    void OnTransportLeaveMap(Transport* transport, Map* map);
     void OnTransportDestroy(Transport* transport);
     void OnTransportUpdate(Transport* transport, uint32 diff);
     void OnTransportRelocate(Transport* transport, uint32 waypointId, uint32 mapId, float x, float y, float z);

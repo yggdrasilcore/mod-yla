@@ -303,6 +303,8 @@ namespace Hooks
         TRANSPORT_EVENT_ON_RELOCATE                     = 4, // (event, transport, waypointId, mapId, x, y, z)
         TRANSPORT_EVENT_ON_ADD_PASSENGER                = 5, // (event, transport, passenger: WorldObject)
         TRANSPORT_EVENT_ON_REMOVE_PASSENGER             = 6, // (event, transport, passenger: WorldObject)
+        TRANSPORT_EVENT_ON_ENTER_MAP                    = 7, // (event, transport, map: Map)
+        TRANSPORT_EVENT_ON_LEAVE_MAP                    = 8, // (event, transport, map: Map)
 
         TRANSPORT_EVENT_COUNT
     };

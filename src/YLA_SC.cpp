@@ -23,6 +23,7 @@
 #include "LuaEngine.h"
 #include "YLACreatureAI.h"
 #include "YLATransportEvents.h"
+#include "Map.h"
 #include "Pet.h"
 #include "Player.h"
 #include "Transport.h"
@@ -1309,6 +1310,16 @@ public:
     void OnTransportCreate(Transport* transport) override
     {
         YLA::GetMapStateOrGlobal(transport->GetMapId(), transport->GetInstanceId())->OnTransportCreate(transport);
+    }
+
+    void OnTransportEnterMap(Transport* transport, Map* map) override
+    {
+        YLA::GetMapStateOrGlobal(map->GetId(), map->GetInstanceId())->OnTransportEnterMap(transport, map);
+    }
+
+    void OnTransportLeaveMap(Transport* transport, Map* map) override
+    {
+        YLA::GetMapStateOrGlobal(map->GetId(), map->GetInstanceId())->OnTransportLeaveMap(transport, map);
     }
 
     void OnTransportDestroy(Transport* transport) override
