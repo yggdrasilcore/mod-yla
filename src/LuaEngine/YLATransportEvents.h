@@ -15,5 +15,6 @@ class Creature;
 void YLABroadcastTransportPassengerAdded(Transport* transport, WorldObject* passenger);
 void YLABroadcastTransportCreaturePassengerAdded(Transport* transport, Creature* creature);
 void YLABroadcastTransportPassengerRemoved(Transport* transport, WorldObject* passenger);
+void YLABroadcastTransportCreaturePassengerRemoved(Transport* transport, Creature* creature);
 
 #endif

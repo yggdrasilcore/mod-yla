@@ -1269,13 +1269,14 @@ namespace LuaGlobalFunctions
      *
      * @table
      * @columns [ID, Event, State, Parameters, Comment]
-     * @values [1, TRANSPORT_EVENT_ON_CREATE, "WORLD", <event: number, transport: Transport>, "The transport has a map but is not in the world yet"]
+     * @values [1, TRANSPORT_EVENT_ON_CREATE, "WORLD", <event: number, transport: Transport>, "The transport has been added to its map"]
      * @values [2, TRANSPORT_EVENT_ON_DESTROY, "WORLD", <event: number, transport: Transport>, "Fired from the transport destructor; the handle is valid only during the call"]
      * @values [3, TRANSPORT_EVENT_ON_UPDATE, "WORLD", <event: number, transport: Transport, diff: number>, ""]
      * @values [4, TRANSPORT_EVENT_ON_RELOCATE, "WORLD", <event: number, transport: Transport, waypointId: number, mapId: number, x: number, y: number, z: number>, ""]
-     * @values [5, TRANSPORT_EVENT_ON_ADD_PASSENGER, "WORLD", <event: number, transport: Transport, passenger: WorldObject>, "Player, Creature or GameObject"]
-     * @values [6, TRANSPORT_EVENT_ON_REMOVE_PASSENGER, "WORLD", <event: number, transport: Transport, passenger: WorldObject>, "Player, Creature or GameObject"]
+     * @values [5, TRANSPORT_EVENT_ON_ADD_PASSENGER, "WORLD", <event: number, transport: Transport, passenger: WorldObject>, "Player or Creature"]
+     * @values [6, TRANSPORT_EVENT_ON_REMOVE_PASSENGER, "WORLD", <event: number, transport: Transport, passenger: WorldObject>, "Player or Creature"]
      * @values [7, TRANSPORT_EVENT_ON_ADD_CREATURE_PASSENGER, "WORLD", <event: number, transport: Transport, creature: Creature>, ""]
+     * @values [8, TRANSPORT_EVENT_ON_REMOVE_CREATURE_PASSENGER, "WORLD", <event: number, transport: Transport, creature: Creature>, ""]
      *
      * @proto cancel = (event, function)
      * @proto cancel = (event, function, shots)

@@ -636,6 +636,7 @@ public:
     void OnTransportAddPassenger(Transport* transport, WorldObject* passenger);
     void OnTransportRemovePassenger(Transport* transport, WorldObject* passenger);
     void OnTransportAddCreaturePassenger(Transport* transport, Creature* creature);
+    void OnTransportRemoveCreaturePassenger(Transport* transport, Creature* creature);
 
     /* Unit */
     void OnUnitDisplayIdChange(Unit* unit, uint32 displayId);

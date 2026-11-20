@@ -1300,6 +1300,11 @@ class YLA_TransportScript : public TransportScript
 public:
     YLA_TransportScript() : TransportScript("YLA_TransportScript") { }
 
+    // The script is not bound to a transport through a database ScriptName; it observes
+    // every transport. Without this, the core defers it to AddALScripts and drops it,
+    // because no `script_names` row exists for this name.
+    [[nodiscard]] bool IsDatabaseBound() const override { return false; }
+
     // Every world starts with YLA enabled, so the transport is live as soon as this runs.
     void OnTransportCreate(Transport* transport) override
     {
@@ -1330,6 +1335,13 @@ public:
         if (!player)
             return;
         YLABroadcastTransportPassengerRemoved(transport, player);
+    }
+
+    void OnRemoveCreaturePassenger(Transport* transport, Creature* creature) override
+    {
+        if (!creature)
+            return;
+        YLABroadcastTransportCreaturePassengerRemoved(transport, creature);
     }
 
     void OnTransportUpdate(Transport* transport, uint32 diff) override

@@ -304,6 +304,7 @@ namespace Hooks
         TRANSPORT_EVENT_ON_ADD_PASSENGER                = 5, // (event, transport, passenger)
         TRANSPORT_EVENT_ON_REMOVE_PASSENGER             = 6, // (event, transport, passenger)
         TRANSPORT_EVENT_ON_ADD_CREATURE_PASSENGER       = 7, // (event, transport, creature)
+        TRANSPORT_EVENT_ON_REMOVE_CREATURE_PASSENGER    = 8, // (event, transport, creature)
 
         TRANSPORT_EVENT_COUNT
     };

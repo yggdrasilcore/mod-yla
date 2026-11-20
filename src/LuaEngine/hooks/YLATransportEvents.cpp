@@ -31,3 +31,9 @@ void YLABroadcastTransportPassengerRemoved(Transport* transport, WorldObject* pa
     if (Player* player = passenger->ToPlayer())
         YLA::GetMapStateOrGlobal(player->GetMapId(), player->GetInstanceId())->OnPlayerLeaveTransport(player, transport);
 }
+
+void YLABroadcastTransportCreaturePassengerRemoved(Transport* transport, Creature* creature)
+{
+    YLA::GetMapStateOrGlobal(transport->GetMapId(), transport->GetInstanceId())->OnTransportRemoveCreaturePassenger(transport, creature);
+    YLABroadcastTransportPassengerRemoved(transport, creature);
+}
