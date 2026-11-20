@@ -1316,32 +1316,18 @@ public:
         YLA::GetMapStateOrGlobal(transport->GetMapId(), transport->GetInstanceId())->OnTransportDestroy(transport);
     }
 
-    void OnAddPassenger(Transport* transport, Player* player) override
+    void OnAddPassenger(Transport* transport, WorldObject* passenger) override
     {
-        if (!player)
+        if (!passenger)
             return;
-        YLABroadcastTransportPassengerAdded(transport, player);
+        YLABroadcastTransportPassengerAdded(transport, passenger);
     }
 
-    void OnAddCreaturePassenger(Transport* transport, Creature* creature) override
+    void OnRemovePassenger(Transport* transport, WorldObject* passenger) override
     {
-        if (!creature)
+        if (!passenger)
             return;
-        YLABroadcastTransportCreaturePassengerAdded(transport, creature);
-    }
-
-    void OnRemovePassenger(Transport* transport, Player* player) override
-    {
-        if (!player)
-            return;
-        YLABroadcastTransportPassengerRemoved(transport, player);
-    }
-
-    void OnRemoveCreaturePassenger(Transport* transport, Creature* creature) override
-    {
-        if (!creature)
-            return;
-        YLABroadcastTransportCreaturePassengerRemoved(transport, creature);
+        YLABroadcastTransportPassengerRemoved(transport, passenger);
     }
 
     void OnTransportUpdate(Transport* transport, uint32 diff) override

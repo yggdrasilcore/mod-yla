@@ -72,19 +72,3 @@ void YLA::OnTransportRemovePassenger(Transport* transport, WorldObject* passenge
     Push(passenger);
     CallAllFunctions(TransportEventBindings, key);
 }
-
-void YLA::OnTransportAddCreaturePassenger(Transport* transport, Creature* creature)
-{
-    START_HOOK(TRANSPORT_EVENT_ON_ADD_CREATURE_PASSENGER);
-    Push(transport);
-    Push(creature);
-    CallAllFunctions(TransportEventBindings, key);
-}
-
-void YLA::OnTransportRemoveCreaturePassenger(Transport* transport, Creature* creature)
-{
-    START_HOOK(TRANSPORT_EVENT_ON_REMOVE_CREATURE_PASSENGER);
-    Push(transport);
-    Push(creature);
-    CallAllFunctions(TransportEventBindings, key);
-}
