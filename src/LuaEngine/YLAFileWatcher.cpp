@@ -7,7 +7,7 @@
 #include "YLAFileWatcher.h"
 #include "LuaEngine.h"
 #include "YLAUtility.h"
-#include <boost/filesystem.hpp>
+#include <system_error>
 
 YLAFileWatcher::YLAFileWatcher() : running(false), checkInterval(1)
 {
@@ -34,9 +34,13 @@ void YLAFileWatcher::StartWatching(const std::string& scriptPath, uint32 interva
 
     watchPath = scriptPath;
     checkInterval = intervalSeconds;
-    running.store(true);
 
-    ScanDirectory(watchPath);
+    baseline = CaptureSnapshot();
+    settleSnapshot.clear();
+    settling = false;
+    haveSettleCapture = false;
+
+    running.store(true);
 
     watcherThread = std::thread(&YLAFileWatcher::WatchLoop, this);
     
@@ -53,7 +57,10 @@ void YLAFileWatcher::StopWatching()
     if (watcherThread.joinable())
         watcherThread.join();
 
-    fileTimestamps.clear();
+    baseline.clear();
+    settleSnapshot.clear();
+    settling = false;
+    haveSettleCapture = false;
     
     YLA_LOG_INFO("[YLAFileWatcher]: Stopped watching files");
 }
@@ -75,142 +82,97 @@ void YLAFileWatcher::WatchLoop()
     }
 }
 
-bool YLAFileWatcher::IsWatchedFileType(const std::string& filename) {
+bool YLAFileWatcher::IsWatchedFileType(const std::string& filename) const
+{
     return (filename.length() >= 4 && filename.substr(filename.length() - 4) == ".lua") ||
         (filename.length() >= 4 && filename.substr(filename.length() - 4) == ".ext") ||
         (filename.length() >= 5 && filename.substr(filename.length() - 5) == ".moon");
 }
 
-void YLAFileWatcher::ScanDirectory(const std::string& path)
+void YLAFileWatcher::CaptureDirectory(const std::filesystem::path& dir, FileSnapshot& snapshot) const
 {
-    try
-    {
-        boost::filesystem::path dir(path);
-        
-        if (!boost::filesystem::exists(dir) || !boost::filesystem::is_directory(dir))
-            return;
+    std::error_code ec;
+    std::filesystem::directory_iterator dir_iter(dir, ec);
+    std::filesystem::directory_iterator end_iter;
 
-        boost::filesystem::directory_iterator end_iter;
-        
-        for (boost::filesystem::directory_iterator dir_iter(dir); dir_iter != end_iter; ++dir_iter)
+    while (!ec && dir_iter != end_iter)
+    {
+        const std::filesystem::directory_entry& entry = *dir_iter;
+
+        std::error_code entryEc;
+        if (entry.is_directory(entryEc))
         {
-            std::string fullpath = dir_iter->path().generic_string();
-            
-            if (boost::filesystem::is_directory(dir_iter->status()))
+            if (!entryEc)
+                CaptureDirectory(entry.path(), snapshot);
+        }
+        else if (!entryEc && entry.is_regular_file(entryEc) && !entryEc)
+        {
+            std::string filename = entry.path().filename().generic_string();
+
+            if (IsWatchedFileType(filename))
             {
-                ScanDirectory(fullpath);
-            }
-            else if (boost::filesystem::is_regular_file(dir_iter->status()))
-            {
-                std::string filename = dir_iter->path().filename().generic_string();
-                
-                if (IsWatchedFileType(filename))
-                {
-                    fileTimestamps[fullpath] = boost::filesystem::last_write_time(dir_iter->path());
-                }
+                FileStamp stamp;
+                stamp.modified = std::filesystem::last_write_time(entry.path(), entryEc);
+                if (!entryEc)
+                    stamp.size = std::filesystem::file_size(entry.path(), entryEc);
+
+                if (!entryEc)
+                    snapshot[entry.path().generic_string()] = stamp;
             }
         }
+
+        dir_iter.increment(ec);
     }
-    catch (const std::exception& e)
-    {
-        YLA_LOG_ERROR("[YLAFileWatcher]: Error scanning directory '{}': {}", path, e.what());
-    }
+}
+
+YLAFileWatcher::FileSnapshot YLAFileWatcher::CaptureSnapshot() const
+{
+    FileSnapshot snapshot;
+
+    std::error_code ec;
+    if (!std::filesystem::is_directory(watchPath, ec) || ec)
+        return snapshot;
+
+    CaptureDirectory(watchPath, snapshot);
+    return snapshot;
 }
 
 void YLAFileWatcher::CheckForChanges()
 {
-    bool hasChanges = false;
-    
-    try
+    FileSnapshot current = CaptureSnapshot();
+
+    if (!settling)
     {
-        boost::filesystem::path dir(watchPath);
-        
-        if (!boost::filesystem::exists(dir) || !boost::filesystem::is_directory(dir))
+        if (current == baseline)
             return;
 
-        boost::filesystem::directory_iterator end_iter;
-        
-        for (boost::filesystem::directory_iterator dir_iter(dir); dir_iter != end_iter; ++dir_iter)
-        {
-            if (ShouldReloadFile(dir_iter->path().generic_string()))
-                hasChanges = true;
-        }
-        
-        for (auto it = fileTimestamps.begin(); it != fileTimestamps.end();)
-        {
-            if (!boost::filesystem::exists(it->first))
-            {
-                YLA_LOG_DEBUG("[YLAFileWatcher]: File deleted: {}", it->first);
-                it = fileTimestamps.erase(it);
-                hasChanges = true;
-            }
-            else
-            {
-                ++it;
-            }
-        }
-    }
-    catch (const std::exception& e)
-    {
-        YLA_LOG_ERROR("[YLAFileWatcher]: Error checking for changes: {}", e.what());
+        // Something changed. Do not reload yet: wait one tick, capture the
+        // files, wait another tick, capture again. Only when both captures
+        // match is the write considered finished.
+        settling = true;
+        haveSettleCapture = false;
+        YLA_LOG_INFO("[YLAFileWatcher]: Lua script changes detected, waiting for writes to settle");
         return;
     }
 
-    if (hasChanges)
+    if (!haveSettleCapture)
     {
-        YLA_LOG_INFO("[YLAFileWatcher]: Lua script changes detected - triggering reload");
-        YLA::ReloadYLA();
-        
-        ScanDirectory(watchPath);
+        settleSnapshot = std::move(current);
+        haveSettleCapture = true;
+        return;
     }
-}
 
-bool YLAFileWatcher::ShouldReloadFile(const std::string& filepath)
-{
-    try
+    if (current != settleSnapshot)
     {
-        boost::filesystem::path file(filepath);
-        
-        if (boost::filesystem::is_directory(file))
-        {
-            boost::filesystem::directory_iterator end_iter;
-            
-            for (boost::filesystem::directory_iterator dir_iter(file); dir_iter != end_iter; ++dir_iter)
-            {
-                if (ShouldReloadFile(dir_iter->path().generic_string()))
-                    return true;
-            }
-            return false;
-        }
-        
-        if (!boost::filesystem::is_regular_file(file))
-            return false;
-            
-        std::string filename = file.filename().generic_string();
+        // Still being written; keep capturing until two consecutive
+        // captures are identical.
+        settleSnapshot = std::move(current);
+        return;
+    }
 
-        if (!IsWatchedFileType(filename)) return false;
-            
-        auto currentTime = boost::filesystem::last_write_time(file);
-        auto it = fileTimestamps.find(filepath);
-        
-        if (it == fileTimestamps.end())
-        {
-            YLA_LOG_DEBUG("[YLAFileWatcher]: New file detected: {}", filepath);
-            fileTimestamps[filepath] = currentTime;
-            return true;
-        }
-        
-        if (it->second != currentTime)
-        {
-            YLA_LOG_DEBUG("[YLAFileWatcher]: File modified: {}", filepath);
-            it->second = currentTime;
-            return true;
-        }
-    }
-    catch (const std::exception& e)
-    {
-        YLA_LOG_ERROR("[YLAFileWatcher]: Error checking file '{}': {}", filepath, e.what());
-    }
-    
-    return false;
+    YLA_LOG_INFO("[YLAFileWatcher]: Lua script changes settled - triggering reload");
+    baseline = settleSnapshot;
+    settling = false;
+    haveSettleCapture = false;
+    YLA::ReloadYLA();
 }

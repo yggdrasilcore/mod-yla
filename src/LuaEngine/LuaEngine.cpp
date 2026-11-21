@@ -80,7 +80,6 @@ std::shared_mutex YLA::worldDataMutex;
 
 // Global bytecode cache that survives YLA reloads
 static std::unordered_map<std::string, GlobalCacheEntry> globalBytecodeCache;
-static std::unordered_map<std::string, std::time_t> timestampCache;
 static std::mutex globalCacheMutex;
 
 extern void RegisterFunctions(YLA* E);
@@ -350,8 +349,6 @@ void YLA::LoadScriptPaths()
 
     lua_scripts.clear();
     lua_extensions.clear();
-
-    ClearTimestampCache();
 
     lua_folderpath = YLAConfig::GetInstance().GetScriptPath();
     const std::string& lua_path_extra = static_cast<std::string>(YLAConfig::GetInstance().GetRequirePath());
@@ -786,29 +783,29 @@ void YLA::AddScriptPath(std::string filename, const std::string& fullpath)
     YLA_LOG_DEBUG("[YLA]: AddScriptPath add path `{}`", fullpath);
 }
 
-std::time_t YLA::GetFileModTime(const std::string& filepath)
+YLAFileStamp YLA::GetFileStamp(const std::string& filepath)
 {
-    struct stat fileInfo;
-    if (stat(filepath.c_str(), &fileInfo) == 0)
-        return fileInfo.st_mtime;
-    return 0;
-}
+    YLAFileStamp stamp;
 
-std::time_t YLA::GetFileModTimeWithCache(const std::string& filepath)
-{
-    auto it = timestampCache.find(filepath);
-    if (it != timestampCache.end())
-        return it->second;
-    
-    std::time_t modTime = GetFileModTime(filepath);
-    timestampCache[filepath] = modTime;
-    return modTime;
+    std::error_code ec;
+    stamp.modified = std::filesystem::last_write_time(filepath, ec);
+    if (ec)
+        return stamp;
+
+    stamp.size = std::filesystem::file_size(filepath, ec);
+    if (ec)
+        return YLAFileStamp{};
+
+    stamp.valid = true;
+    return stamp;
 }
 
 bool YLA::CompileScriptToGlobalCache(const std::string& filepath)
 {
     std::lock_guard<std::mutex> lock(globalCacheMutex);
-    
+
+    YLAFileStamp before = GetFileStamp(filepath);
+
     lua_State* tempL = luaL_newstate();
     if (!tempL)
         return false;
@@ -820,10 +817,17 @@ bool YLA::CompileScriptToGlobalCache(const std::string& filepath)
         return false;
     }
 
-    std::time_t modTime = GetFileModTime(filepath);
-    
+    // Sample the file again after the read. If it moved in between, the
+    // bytecode does not belong to any single on-disk version; do not cache it.
+    YLAFileStamp after = GetFileStamp(filepath);
+    if (!before.valid || before != after)
+    {
+        lua_close(tempL);
+        return false;
+    }
+
     auto& cacheEntry = globalBytecodeCache[filepath];
-    cacheEntry.last_modified = modTime;
+    cacheEntry.stamp = after;
     cacheEntry.filepath = filepath;
     cacheEntry.bytecode.clear();
     cacheEntry.bytecode.reserve(1024);
@@ -856,7 +860,9 @@ bool YLA::CompileScriptToGlobalCache(const std::string& filepath)
 bool YLA::CompileMoonScriptToGlobalCache(const std::string& filepath)
 {
     std::lock_guard<std::mutex> lock(globalCacheMutex);
-    
+
+    YLAFileStamp before = GetFileStamp(filepath);
+
     lua_State* tempL = luaL_newstate();
     if (!tempL)
         return false;
@@ -878,10 +884,15 @@ bool YLA::CompileMoonScriptToGlobalCache(const std::string& filepath)
         return false;
     }
 
-    std::time_t modTime = GetFileModTime(filepath);
-    
+    YLAFileStamp after = GetFileStamp(filepath);
+    if (!before.valid || before != after)
+    {
+        lua_close(tempL);
+        return false;
+    }
+
     auto& cacheEntry = globalBytecodeCache[filepath];
-    cacheEntry.last_modified = modTime;
+    cacheEntry.stamp = after;
     cacheEntry.filepath = filepath;
     cacheEntry.bytecode.clear();
     cacheEntry.bytecode.reserve(2048);
@@ -918,9 +929,11 @@ int YLA::TryLoadFromGlobalCache(lua_State* L, const std::string& filepath)
     auto it = globalBytecodeCache.find(filepath);
     if (it == globalBytecodeCache.end() || it->second.bytecode.empty())
         return LUA_ERRFILE;
-    
-    std::time_t currentModTime = GetFileModTimeWithCache(filepath);
-    if (it->second.last_modified != currentModTime || currentModTime == 0)
+
+    // Full-resolution mtime plus size: a same-second rewrite or an edit that
+    // keeps the length is still detected.
+    YLAFileStamp current = GetFileStamp(filepath);
+    if (!current.valid || current != it->second.stamp)
         return LUA_ERRFILE;
     
     return luaL_loadbuffer(L, reinterpret_cast<const char*>(it->second.bytecode.data()), it->second.bytecode.size(), filepath.c_str());
@@ -975,14 +988,7 @@ void YLA::ClearGlobalCache()
 {
     std::lock_guard<std::mutex> lock(globalCacheMutex);
     globalBytecodeCache.clear();
-    timestampCache.clear();
     YLA_LOG_INFO("[YLA]: Global bytecode cache cleared");
-}
-
-void YLA::ClearTimestampCache()
-{
-    std::lock_guard<std::mutex> lock(globalCacheMutex);
-    timestampCache.clear();
 }
 
 size_t YLA::GetGlobalCacheSize()

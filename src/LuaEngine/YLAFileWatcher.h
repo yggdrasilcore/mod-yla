@@ -9,10 +9,12 @@
 
 #include <thread>
 #include <atomic>
+#include <cstdint>
+#include <filesystem>
 #include <map>
 #include <string>
+#include <utility>
 #include <chrono>
-#include <boost/filesystem.hpp>
 #include "Common.h"
 
 class YLAFileWatcher
@@ -26,18 +28,36 @@ public:
     bool IsWatching() const { return running.load(); }
 
 private:
+    struct FileStamp
+    {
+        std::filesystem::file_time_type modified{};
+        std::uintmax_t size = 0;
+
+        bool operator==(FileStamp const& other) const
+        {
+            return modified == other.modified && size == other.size;
+        }
+    };
+
+    typedef std::map<std::string, FileStamp> FileSnapshot;
+
     void WatchLoop();
-    void ScanDirectory(const std::string& path);
     void CheckForChanges();
-    bool ShouldReloadFile(const std::string& filepath);
-    bool IsWatchedFileType(const std::string& filename);
+    void CaptureDirectory(const std::filesystem::path& dir, FileSnapshot& snapshot) const;
+    FileSnapshot CaptureSnapshot() const;
+    bool IsWatchedFileType(const std::string& filename) const;
 
     std::thread watcherThread;
     std::atomic<bool> running;
     std::string watchPath;
     uint32 checkInterval;
-    
-    std::map<std::string, std::time_t> fileTimestamps;
+
+    // Last state that was acted on. Only advanced after a settled reload.
+    FileSnapshot baseline;
+    // Successive captures taken while waiting for in-progress writes to end.
+    FileSnapshot settleSnapshot;
+    bool settling = false;
+    bool haveSettleCapture = false;
 };
 
 #endif
