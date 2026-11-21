@@ -33,6 +33,8 @@
 #include <memory>
 #include <vector>
 #include <ctime>
+#include <cstdint>
+#include <filesystem>
 #include <unordered_map>
 
 extern "C"
@@ -83,15 +85,27 @@ template<typename T> struct UniqueObjectKey;
 
 typedef std::vector<uint8> BytecodeBuffer;
 
+// Identity of a file's on-disk state. Full-resolution mtime plus size makes
+// two writes in the same second distinguishable, unlike a time_t mtime.
+struct YLAFileStamp
+{
+    std::filesystem::file_time_type modified{};
+    std::uintmax_t size = 0;
+    bool valid = false;
+
+    bool operator==(YLAFileStamp const& other) const
+    {
+        return valid == other.valid && modified == other.modified && size == other.size;
+    }
+
+    bool operator!=(YLAFileStamp const& other) const { return !(*this == other); }
+};
+
 struct GlobalCacheEntry
 {
     BytecodeBuffer bytecode;
-    std::time_t last_modified;
+    YLAFileStamp stamp;
     std::string filepath;
-
-    GlobalCacheEntry() : last_modified(0) {}
-    GlobalCacheEntry(const BytecodeBuffer& code, std::time_t modTime, const std::string& path)
-        : bytecode(code), last_modified(modTime), filepath(path) {}
 };
 
 struct LuaScript
@@ -265,15 +279,13 @@ private:
     static void GetScripts(std::string path, uint32 mapId = 0);
     static void AddScriptPath(std::string filename, const std::string& fullpath);
     static int LoadCompiledScript(lua_State* L, const std::string& filepath);
-    static std::time_t GetFileModTime(const std::string& filepath);
-    static std::time_t GetFileModTimeWithCache(const std::string& filepath);
+    static YLAFileStamp GetFileStamp(const std::string& filepath);
 
     static bool CompileScriptToGlobalCache(const std::string& filepath);
     static bool CompileMoonScriptToGlobalCache(const std::string& filepath);
     static int TryLoadFromGlobalCache(lua_State* L, const std::string& filepath);
     static int LoadScriptWithCache(lua_State* L, const std::string& filepath, bool isMoonScript, uint32* compiledCount = nullptr, uint32* cachedCount = nullptr);
     static void ClearGlobalCache();
-    static void ClearTimestampCache();
     static size_t GetGlobalCacheSize();
 
     static int StackTrace(lua_State *_L);
