@@ -31,6 +31,7 @@
 #include <thread>
 #include <vector>
 #include <ctime>
+#include <cctype>
 #include <sys/stat.h>
 #include <unordered_map>
 
@@ -365,7 +366,7 @@ void YLA::LoadScriptPaths()
     lua_requirepath.clear();
     lua_requirecpath.clear();
 
-    GetScripts(lua_folderpath, 0);
+    GetScripts(lua_folderpath);
 
     // append our custom require paths and cpaths if the config variables are not empty
     if (!lua_path_extra.empty())
@@ -755,7 +756,7 @@ void YLA::DestroyBindStores()
     CreatureUniqueBindings = NULL;
 }
 
-void YLA::AddScriptPath(std::string filename, const std::string& fullpath)
+void YLA::AddScriptPath(std::string filename, const std::string& fullpath, uint32 stateMapId)
 {
     YLA_LOG_DEBUG("[YLA]: AddScriptPath Checking file `{}`", fullpath);
 
@@ -776,6 +777,7 @@ void YLA::AddScriptPath(std::string filename, const std::string& fullpath)
     script.filename = filename;
     script.filepath = fullpath;
     script.modulepath = fullpath.substr(0, fullpath.length() - filename.length() - ext.length());
+    script.stateMapId = stateMapId;
     if (extension)
         lua_extensions.push_back(script);
     else
@@ -1014,8 +1016,34 @@ int YLA::LoadCompiledScript(lua_State* L, const std::string& filepath)
     return luaL_loadbuffer(L, buffer.data(), fileSize, filepath.c_str());
 }
 
+// Reads the leading digits of a folder name as a state map ID
+static bool GetFolderStateMapId(const std::string& folderName, uint32& stateMapId)
+{
+    std::string digits;
+    for (char c : folderName)
+    {
+        if (!std::isdigit(static_cast<unsigned char>(c)))
+            break;
+        digits += c;
+    }
+
+    if (digits.empty())
+        return false;
+
+    try
+    {
+        stateMapId = static_cast<uint32>(std::stoul(digits));
+    }
+    catch (std::exception&)
+    {
+        return false;
+    }
+
+    return true;
+}
+
 // Finds lua script files from given path (including subdirectories) and pushes them to scripts
-void YLA::GetScripts(std::string path, uint32 mapId)
+void YLA::GetScripts(std::string path, uint32 stateMapId)
 {
     YLA_LOG_DEBUG("[YLA]: GetScripts from path `{}`", path);
 
@@ -1052,9 +1080,10 @@ void YLA::GetScripts(std::string path, uint32 mapId)
             if (boost::filesystem::is_directory(dir_iter->status()))
             {
                 std::string folderName = dir_iter->path().filename().generic_string();
-                if (!YLAConfig::GetInstance().ShouldMapLoadYLAByFolderName(folderName, mapId))
-                    continue;
-                GetScripts(fullpath, mapId);
+                uint32 folderStateMapId = stateMapId;
+                if (folderStateMapId == YLA_GLOBAL_STATE)
+                    GetFolderStateMapId(folderName, folderStateMapId);
+                GetScripts(fullpath, folderStateMapId);
                 continue;
             }
 
@@ -1062,7 +1091,7 @@ void YLA::GetScripts(std::string path, uint32 mapId)
             {
                 // was file, try add
                 std::string filename = dir_iter->path().filename().generic_string();
-                AddScriptPath(filename, fullpath);
+                AddScriptPath(filename, fullpath, stateMapId);
             }
         }
     }
@@ -1103,9 +1132,8 @@ void YLA::RunScriptsLocked(bool fireOpenEvent)
     int modules = lua_gettop(L);
     for (ScriptList::const_iterator it = scripts->begin(); it != scripts->end(); ++it)
     {
-        // Filter by map-prefixed subdirectory (e.g. lua_scripts/0/, lua_scripts/1_...)
-        std::string folderName = boost::filesystem::path(it->modulepath).filename().generic_string();
-        if (!YLAConfig::GetInstance().ShouldMapLoadYLAByFolderName(folderName, stateMapId))
+        // Skip scripts scoped to a different state by a numeric folder ancestor
+        if (it->stateMapId != YLA_GLOBAL_STATE && it->stateMapId != stateMapId)
             continue;
 
         // Check that no duplicate names exist
