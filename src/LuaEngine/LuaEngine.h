@@ -114,6 +114,7 @@ struct LuaScript
     std::string filename;
     std::string filepath;
     std::string modulepath;
+    uint32 stateMapId = (uint32)(-1); // YLA_GLOBAL_STATE = unscoped
     LuaScript() {}
 };
 
@@ -276,8 +277,8 @@ private:
     static void _ReloadYLA();
     static void ReloadMapStateLocked(std::shared_ptr<YLA> state);
     static void LoadScriptPaths();
-    static void GetScripts(std::string path, uint32 mapId = 0);
-    static void AddScriptPath(std::string filename, const std::string& fullpath);
+    static void GetScripts(std::string path, uint32 stateMapId = YLA_GLOBAL_STATE);
+    static void AddScriptPath(std::string filename, const std::string& fullpath, uint32 stateMapId);
     static int LoadCompiledScript(lua_State* L, const std::string& filepath);
     static YLAFileStamp GetFileStamp(const std::string& filepath);
 
